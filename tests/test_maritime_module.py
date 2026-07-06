@@ -1,6 +1,7 @@
 import unittest
 
 from maritime_module import (
+    build_theme_css,
     calculate_completion_percentage,
     get_project_config,
     normalize_checklist_item,
@@ -29,6 +30,16 @@ class MaritimeModuleTests(unittest.TestCase):
         self.assertEqual(item["section"], "Safety")
         self.assertEqual(item["status"], "Pending")
         self.assertEqual(item["completion_pct"], 0)
+
+    def test_build_theme_css_contains_theme_specific_tokens(self):
+        dark_css = build_theme_css("dark")
+        light_css = build_theme_css("light")
+        self.assertIn("color-scheme: dark", dark_css)
+        self.assertIn("color-scheme: light", light_css)
+        self.assertIn(".theme-shell", dark_css)
+        self.assertIn(".theme-card", light_css)
+        self.assertIn("--psb-surface", dark_css)
+        self.assertIn("--psb-surface-alt", light_css)
 
 
 if __name__ == "__main__":

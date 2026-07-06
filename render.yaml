@@ -16,3 +16,15 @@ services:
         value: psb-hrdm-files
       - key: PUBLIC_URL
         value: https://training.psbureau.org
+      - key: APP_ENV
+        value: production
+      - key: APP_THEME
+        value: dark
+      - key: APP_SECRET_KEY
+        sync: false
+      - key: DEFAULT_CEO_PASSWORD
+        sync: false
+      - key: SESSION_TIMEOUT_MINUTES
+        value: "30"
+      - key: LOGIN_LOCKOUT_ATTEMPTS
+        value: "5"

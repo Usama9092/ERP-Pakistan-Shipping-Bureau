@@ -132,16 +132,38 @@ def calculate_completion_percentage(completed: int, total: int) -> int:
 def build_theme_css(theme: str) -> str:
     if theme == "dark":
         return """
-        :root { color-scheme: dark; }
-        .theme-shell { background: #0f172a; color: #e2e8f0; }
-        .theme-card { background: #111827; border: 1px solid #334155; color: #f8fafc; }
-        .theme-muted { color: #94a3b8; }
+        :root {
+            color-scheme: dark;
+            --psb-surface: #020617;
+            --psb-surface-alt: #111827;
+            --psb-surface-elevated: #172033;
+            --psb-text: #f8fafc;
+            --psb-muted: #94a3b8;
+            --psb-line: #334155;
+            --psb-accent: #60a5fa;
+            --psb-accent-strong: #2563eb;
+        }
+        .theme-shell { background: var(--psb-surface); color: var(--psb-text); }
+        .theme-card { background: var(--psb-surface-alt); border: 1px solid var(--psb-line); color: var(--psb-text); }
+        .theme-muted { color: var(--psb-muted); }
+        .theme-surface { background: var(--psb-surface-elevated); color: var(--psb-text); border: 1px solid var(--psb-line); }
         """
     return """
-    :root { color-scheme: light; }
-    .theme-shell { background: #f8fafc; color: #111827; }
-    .theme-card { background: #ffffff; border: 1px solid #e2e8f0; color: #111827; }
-    .theme-muted { color: #475569; }
+    :root {
+        color-scheme: light;
+        --psb-surface: #f8fafc;
+        --psb-surface-alt: #ffffff;
+        --psb-surface-elevated: #f1f5f9;
+        --psb-text: #0f172a;
+        --psb-muted: #475569;
+        --psb-line: #e2e8f0;
+        --psb-accent: #0b3b76;
+        --psb-accent-strong: #124f9e;
+    }
+    .theme-shell { background: var(--psb-surface); color: var(--psb-text); }
+    .theme-card { background: var(--psb-surface-alt); border: 1px solid var(--psb-line); color: var(--psb-text); }
+    .theme-muted { color: var(--psb-muted); }
+    .theme-surface { background: var(--psb-surface-elevated); color: var(--psb-text); border: 1px solid var(--psb-line); }
     """
 
 
