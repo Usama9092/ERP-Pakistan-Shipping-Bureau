@@ -111,6 +111,17 @@ def require_persistent_backend() -> None:
         st.stop()
 
 
+def validate_runtime_security_config() -> None:
+    """Warn and block insecure defaults when production secrets are missing."""
+    if is_render_runtime() or APP_ENV == "production":
+        if not os.getenv("APP_SECRET_KEY") or os.getenv("APP_SECRET_KEY") == "psb-erp-secure-session-secret":
+            st.warning("APP_SECRET_KEY is missing or still using the insecure default. Set a strong secret before deployment.")
+        if not os.getenv("DEFAULT_CEO_PASSWORD") or os.getenv("DEFAULT_CEO_PASSWORD") == "CEO@Psb2026!":
+            st.warning("DEFAULT_CEO_PASSWORD is missing or still using the default value. Rotate it immediately after first deployment.")
+        if int(os.getenv("LOGIN_LOCKOUT_ATTEMPTS", "5")) < 3:
+            st.warning("LOGIN_LOCKOUT_ATTEMPTS is set too low for production. Increase it to at least 3.")
+
+
 def backend_status_badges() -> str:
     db_badge = "✅ PostgreSQL/Supabase" if database_is_persistent() else "⚠️ Local SQLite"
     storage_badge = "✅ Supabase Storage" if storage_is_persistent() else ("⚠️ Local files" if not is_render_runtime() else "❌ Storage missing")
