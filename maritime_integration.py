@@ -27,7 +27,7 @@ def get_theme_preference() -> str:
     stored = st.session_state.get(THEME_STORAGE_KEY, "")
     if stored in {"light", "dark"}:
         return stored
-    return "dark" if os.getenv("APP_THEME", "dark").lower() == "dark" else "light"
+    return "light" if os.getenv("APP_THEME", "light").lower() == "light" else "dark"
 
 
 def set_theme_preference(theme: str) -> None:

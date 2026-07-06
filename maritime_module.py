@@ -134,16 +134,31 @@ def build_theme_css(theme: str) -> str:
         return """
         :root {
             color-scheme: dark;
-            --psb-surface: #020617;
-            --psb-surface-alt: #111827;
-            --psb-surface-elevated: #172033;
-            --psb-text: #f8fafc;
+            --psb-surface: #071828;
+            --psb-surface-alt: #0f2439;
+            --psb-surface-elevated: #132b45;
+            --psb-text: #e2e8f0;
             --psb-muted: #94a3b8;
-            --psb-line: #334155;
-            --psb-accent: #60a5fa;
-            --psb-accent-strong: #2563eb;
+            --psb-line: #25415e;
+            --psb-accent: #7fb4ff;
+            --psb-accent-strong: #5ea1ff;
+            --psb-brand-bg: linear-gradient(135deg, #0c1d33 0%, #142c47 100%);
+            --psb-brand-card: rgba(15, 23, 42, 0.85);
+            --psb-brand-text: #f8fafc;
+            --psb-hero-bg: linear-gradient(135deg, rgba(12,29,55,.98) 0%, rgba(15,45,76,.98) 100%);
+            --psb-hero-text: #f8fafc;
+            --psb-hero-pill-bg: rgba(255,255,255,.14);
+            --psb-hero-pill-text: #ffffff;
+            --psb-badge-bg: rgba(255,255,255,.14);
+            --psb-badge-text: #ffffff;
+            --psb-feature-bg: rgba(255,255,255,.08);
+            --psb-feature-text: #dbeafe;
+            --psb-help-bg: rgba(255,255,255,.08);
+            --psb-button-shadow: rgba(15,79,141,.24);
+            --psb-card-shadow: rgba(15,23,42,.08);
+            --psb-shell-bg: #071828;
         }
-        .theme-shell { background: var(--psb-surface); color: var(--psb-text); }
+        .theme-shell { background: var(--psb-shell-bg); color: var(--psb-text); }
         .theme-card { background: var(--psb-surface-alt); border: 1px solid var(--psb-line); color: var(--psb-text); }
         .theme-muted { color: var(--psb-muted); }
         .theme-surface { background: var(--psb-surface-elevated); color: var(--psb-text); border: 1px solid var(--psb-line); }
@@ -151,16 +166,27 @@ def build_theme_css(theme: str) -> str:
     return """
     :root {
         color-scheme: light;
-        --psb-surface: #f8fafc;
+        --psb-surface: #f5f7fb;
         --psb-surface-alt: #ffffff;
-        --psb-surface-elevated: #f1f5f9;
+        --psb-surface-elevated: #eff4fb;
         --psb-text: #0f172a;
-        --psb-muted: #475569;
-        --psb-line: #e2e8f0;
-        --psb-accent: #0b3b76;
-        --psb-accent-strong: #124f9e;
+        --psb-muted: #5b6b7e;
+        --psb-line: #d7e0ec;
+        --psb-accent: #0f4f8d;
+        --psb-accent-strong: #0b3970;
+        --psb-brand-bg: linear-gradient(135deg, #ffffff 0%, #eef4fb 100%);
+        --psb-brand-card: #f8fbff;
+        --psb-brand-text: #0f172a;
+        --psb-badge-bg: rgba(15,79,141,.08);
+        --psb-badge-text: #0f4f8d;
+        --psb-feature-bg: #eef4fb;
+        --psb-feature-text: #0f4f8d;
+        --psb-help-bg: #eef4fb;
+        --psb-button-shadow: rgba(15,79,141,.14);
+        --psb-card-shadow: rgba(15,23,42,.06);
+        --psb-shell-bg: #f1f6fb;
     }
-    .theme-shell { background: var(--psb-surface); color: var(--psb-text); }
+    .theme-shell { background: var(--psb-shell-bg); color: var(--psb-text); }
     .theme-card { background: var(--psb-surface-alt); border: 1px solid var(--psb-line); color: var(--psb-text); }
     .theme-muted { color: var(--psb-muted); }
     .theme-surface { background: var(--psb-surface-elevated); color: var(--psb-text); border: 1px solid var(--psb-line); }
