@@ -6,6 +6,7 @@ import os
 import re
 import secrets
 import time
+from pathlib import Path
 from typing import Any
 
 
@@ -87,6 +88,50 @@ class SessionSecurity:
     def clear_session(self, state: dict[str, Any]) -> None:
         for key in ["auth_session_token", "auth_expires_at", "auth_user_id", "auth_user_role"]:
             state.pop(key, None)
+
+
+class InputSanitizer:
+    """Sanitize user-provided text and filenames for safe rendering and storage."""
+
+    def sanitize_text(self, value: Any) -> str:
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            value = str(value)
+        value = re.sub(r"<script.*?</script>", " ", value, flags=re.I | re.S)
+        value = re.sub(r"<[^>]+>", " ", value)
+        value = re.sub(r"[\x00-\x1f\x7f]", " ", value)
+        value = value.replace("\r", " ").replace("\n", " ")
+        value = re.sub(r"\s+", " ", value).strip()
+        return value
+
+    def sanitize_filename(self, filename: str) -> str:
+        if not filename:
+            return "upload"
+        name = Path(filename).name.replace(" ", "-")
+        name = re.sub(r"[^A-Za-z0-9._-]", "-", name)
+        name = re.sub(r"-+", "-", name).strip(".-")
+        return name or "upload"
+
+
+class FileSecurityValidator:
+    """Validate uploaded file metadata before processing or storing."""
+
+    def __init__(self, max_bytes: int = 20 * 1024 * 1024) -> None:
+        self.max_bytes = max_bytes
+
+    def validate_upload(self, filename: str, content_type: str, size_bytes: int, allowed_extensions: set[str]) -> tuple[bool, str]:
+        name = (filename or "").lower()
+        ext = Path(name).suffix.lstrip(".") if "." in name else ""
+        if ext not in allowed_extensions:
+            return False, f"Unsupported file extension .{ext or 'none'}"
+        if size_bytes <= 0:
+            return False, "Empty upload"
+        if size_bytes > self.max_bytes:
+            return False, f"Upload exceeds maximum allowed size of {self.max_bytes} bytes"
+        if content_type and "/" in content_type and content_type.split("/", 1)[0] not in {"application", "image", "text", "video", "audio"}:
+            return False, "Unsupported MIME type"
+        return True, "ok"
 
 
 class LoginAttemptGuard:

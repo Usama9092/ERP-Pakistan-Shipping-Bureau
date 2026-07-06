@@ -36,7 +36,7 @@ from maritime_integration import (
 )
 from modules import autoload_modules
 from modules.registry import module_registry
-from modules.security import LoginAttemptGuard, PasswordSecurity, SessionSecurity
+from modules.security import FileSecurityValidator, InputSanitizer, LoginAttemptGuard, PasswordSecurity, SessionSecurity
 
 try:
     from supabase import create_client
@@ -74,6 +74,8 @@ LOCAL_UPLOAD_DIR = Path("local_uploads")
 
 APP_ENV = os.getenv("APP_ENV", "production" if os.getenv("RENDER") else "local").lower()
 PASSWORD_SECURITY = PasswordSecurity()
+INPUT_SANITIZER = InputSanitizer()
+FILE_VALIDATOR = FileSecurityValidator(max_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(20 * 1024 * 1024))))
 SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
 LOGIN_LOCKOUT_ATTEMPTS = int(os.getenv("LOGIN_LOCKOUT_ATTEMPTS", "5"))
 SESSION_SECURITY = SessionSecurity(secret=os.getenv("APP_SECRET_KEY", "psb-erp-secure-session-secret"), timeout_minutes=SESSION_TIMEOUT_MINUTES)
@@ -1054,11 +1056,16 @@ def seed_demo() -> None:
 
 def upload_file(uploaded_file, actor: dict, linked_table: str, linked_id: str, category: str) -> dict:
     file_id = uid("FILE")
-    ext = uploaded_file.name.split(".")[-1].lower() if "." in uploaded_file.name else ""
+    original_name = clean(getattr(uploaded_file, "name", ""))
+    ext = original_name.split(".")[-1].lower() if "." in original_name else ""
+    valid, reason = FILE_VALIDATOR.validate_upload(original_name, getattr(uploaded_file, "type", ""), len(uploaded_file.getvalue()), set(ALLOWED_EXTENSIONS))
+    if not valid:
+        raise ValueError(reason)
     if ext not in ALLOWED_EXTENSIONS:
         raise ValueError(f"File type .{ext} is not allowed.")
     data = uploaded_file.getvalue()
-    storage_path = f"{category.replace(' ', '_').lower()}/{linked_table}/{linked_id}/{file_id}_{uploaded_file.name}"
+    safe_name = INPUT_SANITIZER.sanitize_filename(original_name)
+    storage_path = f"{category.replace(' ', '_').lower()}/{linked_table}/{linked_id}/{file_id}_{safe_name}"
     provider = "local"
     public_url = ""
     client = get_supabase_client()
@@ -1088,7 +1095,7 @@ def upload_file(uploaded_file, actor: dict, linked_table: str, linked_id: str, c
     extracted = extract_text(uploaded_file.name, data)
     row = {
         "file_id": file_id, "owner_user_id": actor_get(actor, "user_id"), "owner_name": actor_get(actor, "name"),
-        "linked_table": linked_table, "linked_id": linked_id, "category": category, "file_name": uploaded_file.name,
+        "linked_table": linked_table, "linked_id": linked_id, "category": category, "file_name": safe_name,
         "file_ext": ext, "mime_type": uploaded_file.type or "", "storage_provider": provider,
         "storage_path": storage_path, "public_url": public_url, "extracted_text": extracted[:10000],
         "ocr_status": "Extracted" if extracted else "Pending/Not Supported", "review_status": "Pending Review",

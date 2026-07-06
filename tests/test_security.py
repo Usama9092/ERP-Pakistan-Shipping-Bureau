@@ -1,12 +1,14 @@
 import unittest
 
-from modules.security import PasswordSecurity, SessionSecurity
+from modules.security import FileSecurityValidator, InputSanitizer, PasswordSecurity, SessionSecurity
 
 
 class SecurityModuleTests(unittest.TestCase):
     def setUp(self):
         self.password_security = PasswordSecurity()
         self.session_security = SessionSecurity(secret="test-secret", timeout_minutes=5)
+        self.sanitizer = InputSanitizer()
+        self.file_validator = FileSecurityValidator(max_bytes=1024)
 
     def test_password_hash_round_trip(self):
         password = "StrongP@ssw0rd!"
@@ -29,6 +31,19 @@ class SecurityModuleTests(unittest.TestCase):
 
         expired_state = {"auth_user_id": "user-1", "auth_session_token": token, "auth_expires_at": 0}
         self.assertFalse(self.session_security.validate_session_token(expired_state))
+
+    def test_input_sanitizer_removes_script_and_controls(self):
+        cleaned = self.sanitizer.sanitize_text("<script>alert(1)</script>\nHello\x00World")
+        self.assertEqual(cleaned, "Hello World")
+
+    def test_filename_sanitizer_blocks_path_traversal(self):
+        safe_name = self.sanitizer.sanitize_filename("../../evil file.txt")
+        self.assertEqual(safe_name, "evil-file.txt")
+
+    def test_file_validator_rejects_oversized_uploads(self):
+        valid, reason = self.file_validator.validate_upload("report.pdf", "application/pdf", 2048, {"pdf"})
+        self.assertFalse(valid)
+        self.assertIn("exceeds", reason)
 
 
 if __name__ == "__main__":
