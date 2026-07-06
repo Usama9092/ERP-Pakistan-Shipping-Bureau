@@ -1,0 +1,15 @@
+{
+  "version": "V20 Authorization Lifecycle Reauthorization",
+  "syntax_check": "passed",
+  "added_modules": [
+    "Authorization Lifecycle",
+    "CPD & Refresher Control",
+    "Monitoring Schedule",
+    "Competency Board Review",
+    "Rule Update Training Impact",
+    "Reauthorization Status Center",
+    "Authorization Lifecycle Gap Closure"
+  ],
+  "applies_to": ["Surveyor", "New Building Surveyor", "Plan Appraiser", "ISM/ISPS/MLC Auditor", "Technical Authority", "Technical Monitor"],
+  "status": "ready for deployment after applying V20 SQL in Supabase"
+}
