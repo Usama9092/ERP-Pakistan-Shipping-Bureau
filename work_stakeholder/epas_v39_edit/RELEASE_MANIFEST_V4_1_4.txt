@@ -1,0 +1,30 @@
+EPAS v4.1.4 — GM Stakeholder Registry & Project Selector
+
+Cumulative baseline: EPAS v4.1.3 fixed sidebar navigation.
+
+Major change:
+- Projects tab now exposes two GM-only peer actions:
+  1) Create Project
+  2) Create New Stakeholder
+- Stakeholders are reusable records persisted in Supabase table stakeholder_registry.
+- Supported stakeholder types: owner, designer, ship_management, shipyard.
+- Create Project selects active stakeholder registry entries instead of free-text company names.
+- Selected registry records are copied into project-scoped stakeholders with registry_id lineage.
+- Phase-aware required stakeholder validation:
+  Plan Appraisal -> Designer required
+  NSC Survey -> Shipyard required
+  In-Service -> Owner and Ship Management required
+- Demo mode includes a reusable sample stakeholder registry and supports creating additional demo stakeholders in memory.
+
+Deployment migration:
+- database/production_v4_1_4_stakeholder_registry.sql
+
+Validation:
+- Full pytest: 244 passed, 1 skipped
+- Python compilation: PASS
+- Stakeholder registry static tests: PASS
+
+Security:
+- Stakeholder registry creation is GM-only via SECURITY DEFINER RPC.
+- Registry rows are RLS-protected.
+- Project creation validates selected registry IDs and stakeholder type matches server-side.

@@ -1,0 +1,14 @@
+EPAS v4.0 Project-Centric Role Workspace
+
+Complete cumulative package based on EPAS v3.9.
+
+Key UX changes:
+- GM-only Create Project action in Projects register.
+- Project selection replaces global sidebar with project-specific navigation.
+- Project Overview has no Workflow Snapshot and no Recent Activity.
+- Survey Status and Ship Register are project-specific review surfaces.
+- Plan/NSC/In-Service navigation is phase-aware.
+
+Validation:
+- pytest: 226 passed, 1 skipped (Streamlit browser test environment dependency)
+- Python compilation: PASS

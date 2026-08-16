@@ -1,0 +1,19 @@
+EPAS v3.6.0 Final — Query Consolidation, UX, Scheduler, Security and Performance Hardening
+
+Baseline: EPAS v3.5 cumulative package
+
+Key closures:
+- Active Streamlit components use database.production_queries only.
+- database/queries.py is a production-only compatibility shim.
+- Active survey/schedule/cycle actions use v3.6 facade names.
+- v3.6 scheduler is self-contained and service-role-only.
+- ClamAV + freshclam startup lifecycle included in Docker image.
+- GM/DM main workspaces use mutually exclusive selectors instead of expensive tab execution.
+- Surveyor readiness gate is visually explicit.
+- Owner fleet filtering and Shipyard NSC journey tracker included.
+- v3.6 production indexes and final query facade included.
+
+Validation:
+- pytest suite: see release console output; expected 210 passed, 1 skipped in the analysis environment.
+- Python compileall: PASS
+- Live Supabase/RLS/Storage/pg_cron/load acceptance: deployment-time verification required.

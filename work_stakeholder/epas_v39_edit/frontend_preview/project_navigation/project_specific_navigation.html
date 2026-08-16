@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EPAS v3.8 — Project Specific Navigation Preview</title>
+<style>
+:root{--shell:#03131F;--shell2:#062C3B;--teal:#0A7485;--green:#1E8F68;--bg:#F2F5F6;--line:#DCE4E8;--text:#10212B;--muted:#6C7B86;--red:#C53C35;--amber:#C18B22}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text)}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}.sidebar{background:linear-gradient(180deg,var(--shell2),var(--shell));color:#dcecef;padding:16px 14px}.brand{display:flex;gap:10px;align-items:center;padding:2px 6px 14px;border-bottom:1px solid rgba(255,255,255,.08)}.logo{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.18);object-fit:cover}.org{font-weight:800;font-size:12px;letter-spacing:.5px}.sub{color:#9eb8bf;font-size:9px;margin-top:2px}.kicker{font-size:9px;letter-spacing:1.1px;text-transform:uppercase;color:#90b0b8;font-weight:800;margin:16px 4px 8px}.project{background:linear-gradient(135deg,#0b4e5d,#032231);border:1px solid rgba(129,194,204,.2);border-radius:12px;padding:12px}.code{color:#91d0d7;font-size:8px;letter-spacing:1px;font-weight:900}.name{color:#fff;font-size:15px;font-weight:850;margin-top:4px}.meta{color:#b2cbd1;font-size:9px;margin-top:3px}.phase{display:inline-block;margin-top:9px;background:rgba(30,143,104,.18);border:1px solid rgba(72,197,153,.25);color:#9ce0c5;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:800}.change{margin-top:9px;width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#d9eaee;padding:7px 8px;font-size:9px}.nav{margin-top:4px}.nav a{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:8px;color:#d7e7ec;text-decoration:none;font-size:10px;font-weight:750}.nav a:hover{background:rgba(255,255,255,.06)}.nav a.active{background:linear-gradient(90deg,rgba(18,137,118,.34),rgba(18,137,118,.14));border-left:3px solid #2fb590;padding-left:7px;color:#fff}.badge{background:#0f816e;color:white;border-radius:999px;font-size:8px;padding:3px 5px}.summary{margin-top:18px;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.025);font-size:9px}.summary-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);color:#a9c0c7}.summary-row:last-child{border-bottom:0}.summary b{color:#fff}.main{padding:22px 26px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.crumb{font-size:10px;color:#738590}.crumb span{color:var(--teal);padding:0 5px}.title{font-family:Georgia,'Times New Roman',serif;font-size:29px;font-weight:700}.subt{color:var(--muted);font-size:12px;margin-top:4px}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:18px 0}.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px;box-shadow:0 5px 18px rgba(3,19,31,.055)}.kpi label{display:block;text-transform:uppercase;letter-spacing:.6px;font-size:9px;color:#6d7d87;font-weight:800}.kpi strong{display:block;font-size:25px;color:#092c3a;margin-top:5px}.grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px}.panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 5px 18px rgba(3,19,31,.055)}.panel h3{margin:0 0 12px;font-size:12px}.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.step{padding:7px 9px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:750;background:#f8fbfb}.done{background:#e7f5ef;color:#1d7659;border-color:#bfe0d2}.cur{background:#e9f5fb;color:#0a6b82;border-color:#b9dce7}.pending{background:#f3f5f6;color:#778790}.activity{padding:8px 0;border-bottom:1px solid #eef2f4;font-size:10px}.activity:last-child{border-bottom:0}.note{color:#74838c;font-size:9px;margin-top:3px}.footer{margin-top:20px;padding-top:12px;border-top:1px solid var(--line);font-size:9px;color:#829099}
+@media(max-width:1050px){.app{grid-template-columns:250px 1fr}.kpis{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}.main{padding:18px}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:relative}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">⚓</div><div><div class="org">PAKISTAN SHIPPING BUREAU</div><div class="sub">Classification &amp; Survey Management System</div></div></div>
+  <div class="kicker">Selected Project</div>
+  <div class="project"><div class="code">PSB-PRJ-2025-001</div><div class="name">MV AL FALAH</div><div class="meta">Cargo Vessel · Pakistan</div><div class="phase">In-Service Active · Cycle 2</div><button class="change">↔ Change Project</button></div>
+  <div class="kicker">Project Navigation</div>
+  <nav class="nav">
+    <a class="active" href="#overview">Project Overview</a>
+    <a href="#plan">Plan Appraisal</a>
+    <a href="#nsc">NSC Survey</a>
+    <a href="#inservice">In-Service Survey</div><div class="nav-item">Survey Status <span class="badge">Cycle 2</span></a>
+    <a href="#cert">Certification</a>
+    <a href="#docs">Documents</a>
+    <a href="#notifications">Notifications <span class="badge">8</span></a>
+    <a href="#audit">Audit Trail</a>
+  </nav>
+  <div class="kicker">Project Summary</div>
+  <div class="summary">
+    <div class="summary-row"><span>Vessel</span><b>MV AL FALAH</b></div>
+    <div class="summary-row"><span>Class No.</span><b>1234567</b></div>
+    <div class="summary-row"><span>Current Phase</span><b>In-Service Active</b></div>
+    <div class="summary-row"><span>Current Cycle</span><b>Cycle 2</b></div>
+    <div class="summary-row"><span>Next Survey</span><b>18 Oct 2026</b></div>
+  </div>
+</aside>
+<main class="main">
+  <div class="top"><div><div class="crumb">Projects <span>›</span> PSB-PRJ-2025-001 <span>›</span> Project Overview</div><div class="title">Project Overview</div><div class="subt">The selected project is now the primary context for Plan, NSC, In-Service, Certification, Documents, Notifications and Audit.</div></div><div style="font-size:10px;color:#69808a">Authenticated · RLS Protected</div></div>
+  <div class="kpis"><div class="kpi"><label>Project Health</label><strong>72%</strong></div><div class="kpi"><label>Survey Due</label><strong>6</strong></div><div class="kpi"><label>Open Observations</label><strong style="color:#C53C35">27</strong></div><div class="kpi"><label>Certificates</label><strong style="color:#1E8F68">2</strong></div><div class="kpi"><label>Overdue</label><strong style="color:#C53C35">9</strong></div></div>
+  <div class="grid">
+    <section class="panel" id="overview"><h3>Project Lifecycle &amp; Phase</h3><div class="flow"><span class="step done">Plan Appraisal ✓</span><span>→</span><span class="step done">NSC Survey ✓</span><span>→</span><span class="step cur">In-Service Active · Cycle 2</span><span>→</span><span class="step pending">Cycle 3</span></div><p class="note">Only phases included in this project appear in the left navigation.</p></section>
+    <section class="panel"><h3></h3><div class="flow"><span class="step done">RFI / Scope</span><span>→</span><span class="step done">Assignment</span><span>→</span><span class="step done">Drawing Package</span><span>→</span><span class="step cur">Survey</span><span>→</span><span class="step pending">Certificate</span></div></section>
+    <section class="panel"><h3>Priority Actions</h3><div class="activity"><b>Survey Decisions</b><div class="note">5 awaiting approval</div></div><div class="activity"><b>Certificate Approval</b><div class="note">2 pending final decision</div></div><div class="activity"><b>Overdue Tasks</b><div class="note">9 require attention</div></div></section>
+  </div>
+  <div class="grid" style="margin-top:12px">
+    <section class="panel" id="plan"><h3>Plan Appraisal</h3><div class="activity"><b>DRAW-REV-05</b><div class="note">Approved · relevant controlled revision</div></div><div class="activity"><b>DRAW-REV-04</b><div class="note">Approved · released for survey relevance</div></div></section>
+    <section class="panel" id="nsc"><h3>NSC Survey</h3><div class="activity"><b>NSC cycle</b><div class="note">Completed · certificate active</div></div></section>
+    <section class="panel" id="inservice"><h3>In-Service Survey</div><div class="nav-item">Survey Status</h3><div class="activity"><b>Cycle 2</b><div class="note">In Progress · next due 18 Oct 2026</div></div></section>
+  </div>
+  <div class="grid" style="margin-top:12px">
+    <section class="panel" id="cert"><h3>Certification</h3><div class="activity"><b>CLASS-24-00123</b><div class="note">Active · In-Service Class Certificate</div></div></section>
+    <section class="panel" id="docs"><h3>Documents</h3><div class="activity"><b>Drawing REV-05</b><div class="note">Controlled / approved</div></div></section>
+    <section class="panel" id="notifications"><h3>Notifications</h3><div class="activity"><b>8 project notifications</b><div class="note">2 urgent · 3 due soon · 3 informational</div></div></section>
+  </div>
+  <section class="panel" id="audit" style="margin-top:12px"><h3>Audit Trail</h3><div class="activity"><b>Survey report submitted by Surveyor</b><div class="note">1h ago · MV AL FALAH · RFI-IS-0078</div></div><div class="activity"><b>Corrective evidence uploaded</b><div class="note">3h ago · OBS-224 · Hull Thickness</div></div><div class="activity"><b>Plan appraisal approved by GM</b><div class="note">2d ago · DRAW-REV-04</div></div></section>
+  <div class="footer">EPAS v3.8 · Project-specific navigation preview · PSB Classification &amp; Survey Management System</div>
+</main>
+</div>
+</body></html>
