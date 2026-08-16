@@ -37,6 +37,14 @@ st.markdown(
     <style>
     header[data-testid="stHeader"] { display: none !important; }
     [data-testid="stAppViewContainer"] { overflow: hidden; }
+    [data-testid="stSidebarCollapsedControl"],
+    button[title="Hide sidebar"],
+    button[title="Show sidebar"],
+    [data-testid="collapsedControl"] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
     [data-testid="stSidebar"] {
         position: fixed !important;
         top: 70px !important;
@@ -45,6 +53,8 @@ st.markdown(
         max-width: 240px !important;
         height: calc(100vh - 70px) !important;
         z-index: 9999 !important;
+        transform: none !important;
+        transition: none !important;
     }
     [data-testid="stMainBlockContainer"], .main .block-container {
         padding-top: 95px !important;
