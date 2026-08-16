@@ -106,11 +106,18 @@ html, body, [class*="css"] { font-family: var(--font-body); color: var(--ink-900
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, var(--navy-900) 0%, var(--navy-950) 100%);
     border-right: 1px solid var(--navy-950);
-    min-width: 290px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    width: 240px !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 10;
 }
 [data-testid="stSidebar"] > div:first-child { padding: 1.4rem 1.1rem 1.2rem; }
 [data-testid="stSidebar"] * { color: #E8EDF6; }
 [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.10); margin: 1rem 0; }
+[data-testid="stAppViewContainer"] { overflow: hidden; }
 
 .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
 .brand-mark {

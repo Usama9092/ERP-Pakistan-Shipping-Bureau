@@ -40,14 +40,14 @@ if not user:
 role = user.get('role')
 
 NAV = {
-    'gm': [('Command Center', 'cockpit'), ('Projects', 'projects'), ('Operations', 'operations'), ('Professional Center', 'survey')],
-    'dm': [('Operations Center', 'cockpit'), ('Projects', 'projects'), ('Allocations', 'operations'), ('Professional Center', 'survey')],
-    'engineer': [('Technical Cockpit', 'cockpit'), ('Projects', 'projects'), ('Plan Appraisal', 'operations')],
-    'surveyor': [('Field Cockpit', 'cockpit'), ('Projects', 'projects'), ('Survey Lifecycle', 'survey')],
-    'designer': [('Submission Cockpit', 'cockpit'), ('Projects', 'projects'), ('Plan Appraisal', 'operations')],
-    'ship_management': [('Operations Cockpit', 'cockpit'), ('Projects', 'projects'), ('Operations', 'operations'), ('Survey Lifecycle', 'survey')],
-    'owner': [('Fleet Cockpit', 'cockpit'), ('Projects', 'projects'), ('In-Service', 'operations'), ('Survey Lifecycle', 'survey')],
-    'shipyard': [('NSC Cockpit', 'cockpit'), ('Projects', 'projects'), ('NSC Operations', 'operations'), ('Survey Lifecycle', 'survey')],
+    'gm': [('Projects', 'projects')],
+    'dm': [('Projects', 'projects')],
+    'engineer': [('Projects', 'projects')],
+    'surveyor': [('Projects', 'projects')],
+    'designer': [('Projects', 'projects')],
+    'ship_management': [('Projects', 'projects')],
+    'owner': [('Projects', 'projects')],
+    'shipyard': [('Projects', 'projects')],
 }
 
 if role not in NAV:
