@@ -32,6 +32,90 @@ render_v33_acceptance = render_v36_acceptance  # archived compatibility alias
 
 st.set_page_config(page_title=f"{cfg.APP_NAME} · v4.1.4", page_icon="🚢", layout="wide", initial_sidebar_state="expanded")
 inject_css()
+st.markdown(
+    """
+    <style>
+    header[data-testid="stHeader"] { display: none !important; }
+    [data-testid="stAppViewContainer"] { overflow: hidden; }
+    [data-testid="stSidebar"] {
+        position: fixed !important;
+        top: 70px !important;
+        left: 0 !important;
+        width: 240px !important;
+        max-width: 240px !important;
+        height: calc(100vh - 70px) !important;
+        z-index: 9999 !important;
+    }
+    [data-testid="stMainBlockContainer"], .main .block-container {
+        padding-top: 95px !important;
+        padding-left: 2rem !important;
+        padding-right: 1rem !important;
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+    }
+    .psb-topbar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 70px !important;
+        z-index: 99999 !important;
+        background: #0b2530 !important;
+        border-radius: 0 !important;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.12) !important;
+        margin: 0 !important;
+        padding: 12px 1.5rem !important;
+        border: none !important;
+    }
+    .psb-context-row {
+        position: fixed !important;
+        top: 70px !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 26px !important;
+        z-index: 99998 !important;
+        background: #0b2530 !important;
+        color: #e9f1f4 !important;
+        margin: 0 !important;
+        padding: 0 1.5rem !important;
+        border-top: 1px solid rgba(255,255,255,0.08) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+    .psb-topbar__org,
+    .psb-topbar__product,
+    .psb-role-pill,
+    .psb-user-block strong,
+    .psb-user-block span,
+    .psb-context-label,
+    .psb-context-value,
+    .psb-secure-badge {
+        color: #f3f9fb !important;
+    }
+    .psb-role-pill {
+        background: rgba(255,255,255,0.08) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+    }
+    .psb-topbar__brand,
+    .psb-topbar__context {
+        z-index: 2;
+    }
+    @media (max-width: 900px) {
+        [data-testid="stSidebar"] { width: 220px !important; max-width: 220px !important; }
+        [data-testid="stMainBlockContainer"], .main .block-container {
+            margin-left: 220px !important;
+            width: calc(100vw - 220px) !important;
+            max-width: calc(100vw - 220px) !important;
+            padding-left: 1rem !important;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 user = render_auth()
 if not user:
