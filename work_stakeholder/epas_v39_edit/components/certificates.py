@@ -235,7 +235,7 @@ def render_global() -> None:
         _render_cert_list(all_certs, scope="all")
 
 
-def render_for_project(project_id: str) -> None:
+def render_for_project(project_id: str, *, allow_generate: bool = True) -> None:
     vessel = q.get_vessel_for_project(project_id)
     if not vessel:
         st.info("No vessel record on this project yet.")
@@ -248,8 +248,9 @@ def render_for_project(project_id: str) -> None:
         st.warning(f"{len(expiring)} certificate(s) on this vessel expiring within "
                    f"{cfg.CERT_EXPIRING_SOON_DAYS} days.", icon="⚠️")
 
-    _generate_new_certificate_picker(project_id=project_id)
-    st.write("")
+    if allow_generate:
+        _generate_new_certificate_picker(project_id=project_id)
+        st.write("")
     _render_cert_list(certs)
 
 
@@ -268,3 +269,4 @@ def _render_cert_list(certs: list[dict], scope: str = "default") -> None:
 
 # Public re-export — reused by the Overview page.
 expiring_soon_widget = _expiring_soon_widget
+
