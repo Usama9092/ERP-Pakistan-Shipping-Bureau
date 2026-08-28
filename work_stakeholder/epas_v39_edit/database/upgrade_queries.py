@@ -80,6 +80,7 @@ def _store() -> dict:
     db.setdefault("plan_observations", [])
     db.setdefault("plan_events", [])
     db.setdefault("document_revisions", [])
+    db.setdefault("appraisal_artifacts", [])
     db.setdefault("handover_tasks", [])
     db.setdefault("notifications", [])
     db.setdefault("survey_reports", [])
@@ -221,6 +222,46 @@ def list_plan_drawings(project_id: str) -> list[dict]:
         return [d for d in db["plan_drawings"] if d["project_id"] == project_id]
     return _live_table("plan_drawings").select("*").eq("project_id", project_id).order("updated_at", desc=True).execute().data
 
+
+def submit_initial_plan(project_id: str, drawing_no: str, title: str, discipline: str,
+                        uploaded_file: Any, note: str, designer_id: str) -> dict:
+    """Create the first controlled revision in the selected project's appraisal register."""
+    if uploaded_file is None:
+        raise ValueError("Select the controlled design drawing PDF.")
+    file_name = str(getattr(uploaded_file, "name", "design-drawing.pdf"))
+    if not file_name.lower().endswith(".pdf"):
+        raise ValueError("The design drawing must be a PDF file.")
+    if is_demo_mode():
+        db = _store()
+        document_id = _uid()
+        drawing_id = _uid()
+        now = date.today()
+        db["documents"].append({
+            "id": document_id, "project_id": project_id,
+            "category": cfg.DOC_CATEGORY_DRAWING, "file_name": file_name,
+            "version": 1, "status": "pending_review", "uploaded_by": designer_id,
+            "uploaded_at": now,
+        })
+        drawing = {
+            "id": drawing_id, "project_id": project_id, "document_id": document_id,
+            "drawing_no": drawing_no.strip(), "title": title.strip(),
+            "discipline": discipline, "revision": 1, "status": PA_SUBMITTED,
+            "manager_id": None, "engineer_id": None, "designer_id": designer_id,
+            "submitted_at": now, "updated_at": now, "current_file_name": file_name,
+        }
+        db["plan_drawings"].append(drawing)
+        db["document_revisions"].append({
+            "id": _uid(), "document_id": document_id, "revision": 1,
+            "file_name": file_name, "status": "submitted", "storage_path": "",
+            "created_by": designer_id, "created_at": now,
+        })
+        _event(drawing, "DESIGNER_SUBMITTED", designer_id, note)
+        return drawing
+    from database import production_queries as production
+    return production.designer_submit_initial_drawing(
+        project_id, drawing_no.strip(), title.strip(), discipline, uploaded_file, note
+    )
+
 def list_approved_plan_drawings(project_id: str) -> list[dict]:
     """Return only Plan Appraisal approved drawings eligible for survey handover."""
     return [d for d in list_plan_drawings(project_id) if d.get("status") == PA_APPROVED]
@@ -285,6 +326,39 @@ def list_plan_observations(drawing_id: str, open_only: bool = False) -> list[dic
     if open_only:
         rows = [o for o in rows if o["status"] == "open"]
     return rows
+
+
+def list_appraisal_artifacts(drawing_id: str) -> list[dict]:
+    if is_demo_mode():
+        return sorted(
+            [row for row in _store()["appraisal_artifacts"] if row["drawing_id"] == drawing_id],
+            key=lambda row: str(row.get("uploaded_at") or ""), reverse=True,
+        )
+    return _live_table("plan_appraisal_artifacts").select(
+        "id,drawing_id,artifact_type,file_name,storage_path,mime_type,size_bytes,uploaded_by,uploaded_at"
+    ).eq("drawing_id", drawing_id).order("uploaded_at", desc=True).execute().data or []
+
+
+def register_appraisal_artifact(drawing_id: str, artifact_type: str,
+                                uploaded_file: Any, actor_id: str) -> dict:
+    if uploaded_file is None:
+        raise ValueError("Select the required appraisal PDF.")
+    file_name = str(getattr(uploaded_file, "name", "appraisal.pdf"))
+    if not file_name.lower().endswith(".pdf"):
+        raise ValueError("Appraisal artifacts must be PDF files.")
+    if is_demo_mode():
+        drawing = get_plan_drawing(drawing_id)
+        row = {
+            "id": _uid(), "project_id": drawing["project_id"], "drawing_id": drawing_id,
+            "artifact_type": artifact_type, "file_name": file_name, "storage_path": "",
+            "mime_type": "application/pdf", "size_bytes": len(uploaded_file.getvalue()),
+            "uploaded_by": actor_id, "uploaded_at": date.today(),
+        }
+        _store()["appraisal_artifacts"].append(row)
+        _event(drawing, "APPRAISAL_PDF_REGISTERED", actor_id, f"{artifact_type}: {file_name}")
+        return row
+    from database import production_queries as production
+    return production.engineer_register_appraisal_artifact(drawing_id, artifact_type, uploaded_file)
 
 
 def is_project_manager_eligible(project_id: str, user_id: str) -> bool:
