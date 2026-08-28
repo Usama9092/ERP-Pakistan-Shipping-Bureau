@@ -127,8 +127,9 @@ def _seed_if_empty(db: dict) -> None:
 
 def _seed_project_plan_package(db: dict, project_id: str) -> None:
     """Create a project-scoped demonstration of the full appraisal lifecycle."""
-    if any(d.get("project_id") == project_id for d in db["plan_drawings"]):
-        return
+    existing_numbers = {
+        str(d.get("drawing_no")) for d in db["plan_drawings"] if d.get("project_id") == project_id
+    }
 
     designer = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_DESIGNER), None)
     manager = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_DM), None)
@@ -154,6 +155,8 @@ def _seed_project_plan_package(db: dict, project_id: str) -> None:
     ]
 
     for index, (number, title, discipline, revision, status, file_name) in enumerate(samples):
+        if number in existing_numbers:
+            continue
         document_id = _uid()
         drawing_id = _uid()
         uploaded_at = date.today() - timedelta(days=12 - index * 2)
@@ -364,6 +367,26 @@ def register_appraisal_artifact(drawing_id: str, artifact_type: str,
 def is_project_manager_eligible(project_id: str, user_id: str) -> bool:
     u = q.get_user(user_id)
     return bool(u and u["role"] == cfg.ROLE_DM)
+
+
+def project_manager_candidates(project_id: str) -> list[dict]:
+    """Return DM candidates without leaking the unrestricted profile directory."""
+    if is_demo_mode():
+        return [
+            user for user in _store()["profiles"]
+            if user.get("role") == cfg.ROLE_DM and user.get("active", True)
+        ]
+    from database import production_queries as production
+    candidates: dict[str, dict] = {}
+    for member in production.members(project_id):
+        profile = member.get("profiles") or member.get("profile") or {}
+        if profile.get("role") == cfg.ROLE_DM and profile.get("id"):
+            candidates[str(profile["id"])] = profile
+    if not candidates:
+        for profile in production.users(role=cfg.ROLE_DM):
+            if profile.get("active", True):
+                candidates[str(profile["id"])] = profile
+    return list(candidates.values())
 
 
 def assign_plan_manager(drawing_id: str, manager_id: str, actor_id: str) -> dict:
