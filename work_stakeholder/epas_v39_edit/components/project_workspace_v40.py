@@ -193,6 +193,18 @@ def render(role: str, project_id: str | None):
         st.rerun()
 
     phases = {str(x).lower() for x in (project.get("phases") or [])}
+    phase_rows = _safe(lambda: pq.project_phase_status(project_id), "Project phase status") or []
+    phase_states = {
+        str(row.get("phase") or "").lower(): str(row.get("status") or "").lower()
+        for row in phase_rows
+    }
+    nsc_state = phase_states.get("nsc_survey", "")
+    in_service_state = phase_states.get("in_service", "")
+    in_service_unlocked = (
+        "nsc_survey" not in phases
+        or nsc_state in {"completed", "accepted", "closed"}
+        or in_service_state in {"ready", "active", "in_progress", "completed"}
+    )
     # Only phases actually included in the selected project are shown. This keeps
     # the project navigation honest: Plan/NSC/In-Service appear only when they
     # are part of that project's scope. Certification, Documents, Notifications
@@ -204,13 +216,15 @@ def render(role: str, project_id: str | None):
         if role in {"designer", "engineer"} and value in {"nsc_survey", "survey_status"}:
             continue
         direct_in_service_plan = (
-            "in_service" in phases and role in {"gm", "owner", "ship_management"}
+            "in_service" in phases
+            and in_service_unlocked
+            and role in {"gm", "owner", "ship_management"}
         )
         if value == "plan_appraisal" and "plan_appraisal" not in phases and not direct_in_service_plan:
             continue
         if value == "nsc_survey" and "nsc_survey" not in phases:
             continue
-        if value == "in_service" and "in_service" not in phases:
+        if value == "in_service" and ("in_service" not in phases or not in_service_unlocked):
             continue
         nav.append((label, value, desc))
 
