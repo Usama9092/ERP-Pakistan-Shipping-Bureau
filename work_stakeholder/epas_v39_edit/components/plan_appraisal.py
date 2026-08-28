@@ -25,27 +25,118 @@ def render(project: dict | None = None) -> None:
         st.warning("No project selected.")
         return
 
-    st.markdown('<div class="section-title">Plan Appraisal Control Center</div>', unsafe_allow_html=True)
-    st.caption("Controlled drawing workflow with manager handover, competency/authorization checks, revision control and GM approval.")
+    st.markdown('<div class="section-title">Plan Appraisal</div>', unsafe_allow_html=True)
+    st.caption(
+        f"{project.get('project_code', 'Project')} · Controlled plan intake, allocation, "
+        "technical review, revision control and GM approval."
+    )
 
     drawings = uq.list_plan_drawings(project["id"])
     _summary(drawings)
     st.write("")
 
-    pending_gm = [d for d in drawings if d["status"] == uq.PA_PENDING_GM]
-    rejected_for_gm = [d for d in drawings if d["status"] == uq.PA_REJECTED]
-    if pending_gm or rejected_for_gm:
-        st.markdown('<div class="section-title">GM Action</div>', unsafe_allow_html=True)
-        for d in pending_gm:
-            _gm_review_card(d, project)
-        for d in rejected_for_gm:
-            _gm_designer_correction_card(d, project)
-
-    st.markdown('<div class="section-title">Drawing Register</div>', unsafe_allow_html=True)
     if not drawings:
-        st.info("No plan appraisal drawings have been submitted for this project.")
-    for d in drawings:
-        _drawing_card(d, project)
+        st.info("No plans have been received for this project. New Designer submissions will appear here automatically.")
+        return
+
+    intake_statuses = {uq.PA_SUBMITTED, uq.PA_ASSIGNED_MANAGER, uq.PA_DESIGNER_RESPONSE}
+    review_statuses = {uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED, uq.PA_MANAGER_REVIEW}
+    revision_statuses = {uq.PA_OBSERVATION_RAISED, uq.PA_DESIGNER_RESPONSE, uq.PA_REVIEW_RESUBMITTED, uq.PA_REJECTED}
+    decision_statuses = {uq.PA_PENDING_GM, uq.PA_REJECTED}
+
+    intake = [d for d in drawings if d["status"] in intake_statuses]
+    review = [d for d in drawings if d["status"] in review_statuses]
+    revisions = [d for d in drawings if d["status"] in revision_statuses or uq.list_document_revisions(d["document_id"])]
+    decisions = [d for d in drawings if d["status"] in decision_statuses]
+    approved = [d for d in drawings if d["status"] == uq.PA_APPROVED]
+
+    tabs = st.tabs([
+        f"Received & Allocation ({len(intake)})",
+        f"Technical Review ({len(review)})",
+        f"Revisions & Observations ({len(revisions)})",
+        f"GM Decisions ({len(decisions)})",
+        f"Approved Plans ({len(approved)})",
+    ])
+    with tabs[0]:
+        _render_group(intake, project, "No newly received plans are awaiting allocation.")
+    with tabs[1]:
+        _render_group(review, project, "No plans are currently in technical or manager review.")
+    with tabs[2]:
+        _revision_register(revisions, project)
+    with tabs[3]:
+        if not decisions:
+            st.success("No plan decisions are currently waiting for GM action.")
+        for d in decisions:
+            if d["status"] == uq.PA_PENDING_GM:
+                _gm_review_card(d, project)
+            else:
+                _gm_designer_correction_card(d, project)
+    with tabs[4]:
+        _render_group(approved, project, "No plans have received final GM approval yet.")
+
+
+def _render_group(drawings: list[dict], project: dict, empty_message: str) -> None:
+    if not drawings:
+        st.info(empty_message)
+        return
+    for drawing in drawings:
+        _drawing_card(drawing, project)
+
+
+def _revision_register(drawings: list[dict], project: dict) -> None:
+    if not drawings:
+        st.info("No revisions or plan observations have been recorded for this project.")
+        return
+    for drawing in drawings:
+        with st.container(border=True):
+            st.markdown(
+                f"**{drawing['drawing_no']} — {drawing['title']}** · Current revision "
+                f"**{drawing['revision']}** · {uq.PA_STATUS_LABELS.get(drawing['status'], drawing['status'])}"
+            )
+            observations = uq.list_plan_observations(drawing["id"], open_only=False)
+            open_count = sum(1 for item in observations if str(item.get("status", "open")).lower() == "open")
+            c1, c2, c3 = st.columns(3)
+            revisions = uq.list_document_revisions(drawing["document_id"])
+            c1.metric("Recorded Revisions", len(revisions))
+            c2.metric("Observations", len(observations))
+            c3.metric("Open Observations", open_count)
+
+            revision_tab, observation_tab, history_tab = st.tabs([
+                "Revision Register", "Observations & Responses", "Workflow History"
+            ])
+            with revision_tab:
+                if not revisions:
+                    st.caption("Only the current plan revision is registered.")
+                for revision in revisions:
+                    st.markdown(
+                        f"**Rev {revision.get('revision', '—')}** · "
+                        f"{revision.get('status', '—')} · {revision.get('file_name', '—')}"
+                    )
+                    st.caption(str(revision.get("created_at") or ""))
+            with observation_tab:
+                if not observations:
+                    st.success("No observations have been raised against this plan.")
+                for observation in observations:
+                    status = str(observation.get("status") or "open").replace("_", " ").title()
+                    st.markdown(
+                        f"**{observation.get('obs_code', 'Observation')}** · "
+                        f"{observation.get('severity', '—')} · {status}"
+                    )
+                    st.caption(observation.get("description") or "No description recorded.")
+                    response = observation.get("designer_response") or observation.get("response")
+                    if response:
+                        st.info(f"Designer response: {response}")
+            with history_tab:
+                events = uq.list_plan_events(drawing["id"])
+                if not events:
+                    st.caption("No workflow events have been recorded.")
+                for event in events:
+                    actor = q.get_user(event.get("actor_id"))
+                    st.markdown(
+                        f"**{event.get('event_type', 'Event').replace('_', ' ').title()}** · "
+                        f"{actor['full_name'] if actor else 'System'}"
+                    )
+                    st.caption(f"{event.get('created_at', '')} · {event.get('note', '')}")
 
 
 def _summary(drawings: list[dict]) -> None:
@@ -156,10 +247,11 @@ def _gm_designer_correction_card(d: dict, project: dict) -> None:
     with st.container(border=True):
         st.markdown(f'**{d["drawing_no"]} — {d["title"]}** · Rev {d["revision"]}')
         st.warning("Manager marked the design as rejected / amended. GM must send it to the Designer for correction.")
-        note = st.text_area("GM instruction to Designer", key=f"gm_designer_note_{d['id']}")
-        if st.button("Send to Designer for Correction →", key=f"gm_to_designer_{d['id']}", type="primary"):
+        note = st.text_area("GM instruction to Designer", key=f"gm_designer_note_{d["id"]}")
+        if st.button("Send to Designer for Correction →", key=f"gm_to_designer_{d["id"]}", type="primary"):
             if not note.strip():
                 st.error("Enter the correction instruction before sending.")
             else:
                 uq.gm_send_to_designer(d["id"], q.current_gm()["id"], note)
                 st.rerun()
+
