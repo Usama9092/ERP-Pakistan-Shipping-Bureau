@@ -146,7 +146,26 @@ def _demo_read(name, *args, **kwargs):
     if name in {"dashboard_project_health_bundle"}:
         pids = args[0] if args else []
         return {pid:_project_health(pid) for pid in pids}
-    if name in {"project_phase_status", "project_phase_workflow_v36"}: return [{"phase": ph, "status": "completed" if ph=="plan_appraisal" else ("in_progress" if ph=="in_service" else "completed")} for ph in (_project(project_id) or {}).get("phases", [])]
+    if name in {"project_phase_status", "project_phase_workflow_v36"}:
+        phase_rows = []
+        phases = [str(ph).lower() for ph in (_project(project_id) or {}).get("phases", [])]
+        project_rfis = _rfis(project_id)
+        terminal = {"certificate_issued", "closed", "completed", "accepted"}
+        nsc_rfis = [row for row in project_rfis if row.get("phase") == "nsc_survey"]
+        nsc_complete = bool(nsc_rfis) and all(row.get("status") in terminal for row in nsc_rfis)
+        for phase in phases:
+            if phase == "plan_appraisal":
+                status = "completed"
+            elif phase == "nsc_survey":
+                status = "completed" if nsc_complete else "in_progress"
+            elif phase == "in_service" and "nsc_survey" in phases and not nsc_complete:
+                status = "locked"
+            elif phase == "in_service":
+                status = "in_progress"
+            else:
+                status = "ready"
+            phase_rows.append({"phase": phase, "status": status})
+        return phase_rows
     if name in {"stakeholder_fleet_bundle_v36", "stakeholder_fleet_summary"}:
         return [{"project_id":p["id"],"project_code":p.get("project_code"),"vessel":(_vessel(p["id"]) or {}).get("name"),"health":_project_health(p["id"])} for p in _projects_for_user()]
     if name in {"owner_fleet_bundle_v36", "ship_management_bundle_v36", "shipyard_nsc_bundle_v36"}: return {"projects": _projects_for_user(), "vessels": [_vessel(p["id"]) for p in _projects_for_user() if _vessel(p["id"])], "metrics": _demo_read("metrics")}
