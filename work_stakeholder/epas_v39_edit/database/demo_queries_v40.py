@@ -123,7 +123,25 @@ def _demo_read(name, *args, **kwargs):
     if name in {"tasks", "all_project_tasks", "my_work_queue"}: return _tasks()
     if name in {"notifications"}: return []
     if name in {"metrics", "role_dashboard_summary", "role_dashboard_summary_v36"}:
-        ps = _projects_for_user(); return {"active_projects": len(ps), "open_observations": sum(_project_health(p["id"])["open_observations"] for p in ps), "survey_due": sum(1 for p in ps if _project_health(p["id"])["next_survey_due"]), "overdue_tasks": sum(_project_health(p["id"])["overdue_tasks"] for p in ps), "certificates": sum(_project_health(p["id"])["certificate_count"] for p in ps)}
+        ps = _projects_for_user()
+        tasks = _tasks()
+        open_tasks = [t for t in tasks if t.get("status") in {"pending", "accepted", "in_progress"}]
+        plan_pending = sum(1 for t in open_tasks if t.get("task_type") in {"GM_PLAN_FINAL_APPROVAL", "PLAN_APPRAISAL_GM_DESIGN_DECISION"})
+        survey_pending = sum(1 for r in _rfis() if r.get("status") == "pending_gm_approval")
+        return {
+            "active_projects": len(ps),
+            "open_observations": sum(_project_health(p["id"])["open_observations"] for p in ps),
+            "survey_due": sum(1 for p in ps if _project_health(p["id"])["next_survey_due"]),
+            "overdue_tasks": sum(_project_health(p["id"])["overdue_tasks"] for p in ps),
+            "certificates": sum(_project_health(p["id"])["certificate_count"] for p in ps),
+            "plan_pending_gm": plan_pending,
+            "pending_decisions": survey_pending,
+            "pending_gm_rfi": survey_pending,
+            "open_tasks": len(open_tasks),
+            "open_escalations": 0,
+            "plan_total": 0,
+            "role": (demo_runtime.current_user() or {}).get("role", ""),
+        }
     if name in {"role_dashboard_detail", "project_health", "project_health_v15", "project_health_v36"}: return _project_health(args[0]) if args else {}
     if name in {"dashboard_project_health_bundle"}:
         pids = args[0] if args else []
