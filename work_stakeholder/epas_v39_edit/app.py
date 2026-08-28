@@ -30,7 +30,7 @@ render_v33_acceptance = render_v36_acceptance  # archived compatibility alias
 
 
 
-st.set_page_config(page_title=f"{cfg.APP_NAME} · v4.1.4", page_icon="🚢", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title=f"{cfg.APP_NAME} · v4.1.4", page_icon="🚢", layout="wide", initial_sidebar_state="collapsed")
 inject_css()
 
 user = render_auth()
@@ -59,11 +59,18 @@ state_key = f"epas_view_{role}_v414"
 labels = [x[0] for x in options]
 view_titles = {label: key for label, key in options}
 
-# Fixed global navigation before project selection.
 project_id = st.session_state.get("selected_project_id")
+
+# Custom application navigation rail. This deliberately does not use
+# ``st.sidebar`` so Streamlit cannot inject a collapse/move arrow.
+nav_column, workspace_column = st.columns([1.55, 8.45], gap="small")
+with nav_column:
+    nav_host = st.container(key="psb_fixed_nav")
+
 if not project_id:
-    with st.sidebar:
+    with nav_host:
         st.markdown('<div class="psb-global-nav-label">GLOBAL NAVIGATION</div>', unsafe_allow_html=True)
+        st.markdown('<div class="psb-fixed-nav-title">WORKSPACE</div>', unsafe_allow_html=True)
         selected_label = st.radio(
             "WORKSPACE",
             labels,
@@ -80,39 +87,35 @@ if not project_id:
 else:
     view = "project_context"
 
-# PSB application shell: authenticated identity, current workspace and secure status.
-render_topbar(user, "Project Workspace" if project_id else selected_label)
+with workspace_column:
+    # PSB application shell: authenticated identity, current workspace and secure status.
+    render_topbar(user, "Project Workspace" if project_id else selected_label)
 
-if project_id:
-    # Once a project is opened, it becomes the primary context. The role-specific
-    # project navigation sits on the left and all project operations remain in the
-    # selected project boundary.
-    render_project_workspace(role, project_id)
-    st.stop()
-
-if view == 'cockpit':
-    render_role_cockpit(role)
-elif view == 'projects':
-    render_project_launcher(role)
-elif view == 'operations':
-    if role == cfg.ROLE_GM:
-        render_gm()
-    elif role == cfg.ROLE_DM:
-        render_dm()
-    elif role == cfg.ROLE_ENGINEER:
-        render_engineer()
-    elif role == cfg.ROLE_SURVEYOR:
-        render_surveyor()
-    elif role == cfg.ROLE_DESIGNER:
-        render_designer()
-    elif role == cfg.ROLE_SHIP_MANAGEMENT:
-        render_ship_management()
-    elif role in (cfg.ROLE_OWNER, cfg.ROLE_SHIPYARD):
-        render_readonly_stakeholder()
-elif view == 'survey':
-    render_professional_center(include_security=(role in (cfg.ROLE_GM, cfg.ROLE_DM)))
-    render_survey_lifecycle_v36()
-elif view == 'governance':
-    render_professional_center(include_security=True)
-    render_v36_acceptance()
+    if project_id:
+        render_project_workspace(role, project_id, nav_host=nav_host)
+    elif view == 'cockpit':
+        render_role_cockpit(role)
+    elif view == 'projects':
+        render_project_launcher(role)
+    elif view == 'operations':
+        if role == cfg.ROLE_GM:
+            render_gm()
+        elif role == cfg.ROLE_DM:
+            render_dm()
+        elif role == cfg.ROLE_ENGINEER:
+            render_engineer()
+        elif role == cfg.ROLE_SURVEYOR:
+            render_surveyor()
+        elif role == cfg.ROLE_DESIGNER:
+            render_designer()
+        elif role == cfg.ROLE_SHIP_MANAGEMENT:
+            render_ship_management()
+        elif role in (cfg.ROLE_OWNER, cfg.ROLE_SHIPYARD):
+            render_readonly_stakeholder()
+    elif view == 'survey':
+        render_professional_center(include_security=(role in (cfg.ROLE_GM, cfg.ROLE_DM)))
+        render_survey_lifecycle_v36()
+    elif view == 'governance':
+        render_professional_center(include_security=True)
+        render_v36_acceptance()
 
