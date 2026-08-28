@@ -85,9 +85,4 @@ def render(role):
       for code,vessel,typ,ago in [('CLASS-24-00123','MV AL-FALAH','NSC','2d ago'),('CLASS-24-00124','MV OCEAN STAR','Interim','3d ago'),('CLASS-24-00125','MV BLUE WAVE','NSC','5d ago')]:
         st.markdown(f"<div class='ref-cert-row'><div><strong>{code}</strong><span>{vessel}</span></div><em>{typ}</em><small>{ago}</small></div>",unsafe_allow_html=True)
       _close()
-    with st.expander('Authorized global search',expanded=False):
-      q=st.text_input('Search project, vessel, RFI or certificate',placeholder='Enter at least 2 characters',key=f'v37_search_{role}')
-      if q.strip():
-        results=_safe(lambda:pq.global_search_v36(q,25),'Search') or []
-        if not results: st.info('No authorized matches found.')
-        for row in results: st.markdown(f"**{row.get('result_type','').title()}** · {row.get('title','—')}")
+
