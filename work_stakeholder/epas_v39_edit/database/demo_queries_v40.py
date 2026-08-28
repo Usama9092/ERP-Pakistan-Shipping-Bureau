@@ -151,13 +151,54 @@ def _demo_read(name, *args, **kwargs):
         return [{"project_id":p["id"],"project_code":p.get("project_code"),"vessel":(_vessel(p["id"]) or {}).get("name"),"health":_project_health(p["id"])} for p in _projects_for_user()]
     if name in {"owner_fleet_bundle_v36", "ship_management_bundle_v36", "shipyard_nsc_bundle_v36"}: return {"projects": _projects_for_user(), "vessels": [_vessel(p["id"]) for p in _projects_for_user() if _vessel(p["id"])], "metrics": _demo_read("metrics")}
     if name in {"schedule_bundle_v36", "survey_control_tower", "survey_schedule_queue", "v36_lifecycle_cases", "project_timeline", "project_timeline_v35", "project_timeline_v36", "coordination_timeline_v36"}: return []
-    if name in {"plan_drawings", "plan_drawings_by_ids", "plan_observations", "plan_observations_by_drawing_ids", "plan_revisions", "surveyor_plan_verification_queue", "survey_checklist", "survey_reports", "corrective_actions", "escalations", "milestones", "project_milestones", "risks", "decisions", "governance_register", "audit_events", "document_releases", "released_documents", "document_access_log", "list_documents", "designer_submission_queue", "ship_management_action_queue"}: return []
+    if name == "plan_drawings":
+        rows = _db().setdefault("plan_drawings", [])
+        return [row for row in rows if not project_id or row.get("project_id") == project_id]
+    if name in {"plan_drawings_by_ids", "plan_observations", "plan_observations_by_drawing_ids", "plan_revisions", "surveyor_plan_verification_queue", "survey_checklist", "survey_reports", "corrective_actions", "escalations", "milestones", "project_milestones", "risks", "decisions", "governance_register", "audit_events", "document_releases", "released_documents", "document_access_log", "list_documents", "designer_submission_queue", "ship_management_action_queue"}: return []
     if name in {"resource_workload", "resource_allocation_matrix", "sla_dashboard", "task_sla_snapshot", "security_preflight"}: return [] if name not in {"sla_dashboard"} else {"on_track":12,"due_soon":4,"overdue":2}
     if name == "global_search_v36": return []
     if name in {"vessel", "get_vessel_for_project"}: return _vessel(args[0])
     return []
 
 def _demo_write(name, *args, **kwargs):
+    if name == "designer_submit_initial_drawing":
+        project_id, drawing_no, title, discipline, uploaded_file, note = args
+        db = _db()
+        rows = db.setdefault("plan_drawings", [])
+        documents = db.setdefault("documents", [])
+        revisions = db.setdefault("document_revisions", [])
+        events = db.setdefault("plan_events", [])
+        sequence = len(rows) + 1
+        file_name = getattr(uploaded_file, "name", None) or f"{drawing_no}-REV-1.pdf"
+        document_id = f"demo-plan-document-{sequence:03d}"
+        drawing_id = f"demo-plan-{sequence:03d}"
+        document = {
+            "id": document_id, "project_id": project_id, "category": "drawing",
+            "file_name": file_name, "version": 1, "status": "pending_review",
+            "uploaded_by": _uid(), "uploaded_at": date.today(),
+        }
+        drawing = {
+            "id": drawing_id, "project_id": project_id, "document_id": document_id,
+            "drawing_no": drawing_no, "title": title, "discipline": discipline,
+            "revision": 1, "current_revision": 1, "status": "submitted",
+            "manager_id": None, "engineer_id": None, "designer_id": _uid(),
+            "submitted_at": date.today(), "updated_at": date.today(),
+            "current_file_name": file_name, "submission_note": note,
+        }
+        documents.append(document)
+        rows.append(drawing)
+        revisions.append({
+            "id": f"demo-plan-revision-{sequence:03d}", "document_id": document_id,
+            "revision": 1, "revision_no": 1, "status": "submitted",
+            "file_name": file_name, "created_at": datetime.now().isoformat(),
+            "submitted_at": datetime.now().isoformat(), "submitted_by": _uid(),
+        })
+        events.append({
+            "id": f"demo-plan-event-{sequence:03d}", "drawing_id": drawing_id,
+            "event_type": "SUBMITTED_TO_GM", "actor_id": _uid(), "note": note,
+            "created_at": datetime.now().isoformat(),
+        })
+        return drawing
     if name == "stakeholder_create_rfi":
         project_id, vessel_id, phase, survey_type, requested_date, priority, scope_note = args
         rows = _db()["rfis"]
