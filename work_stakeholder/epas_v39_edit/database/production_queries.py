@@ -344,27 +344,15 @@ def mark_milestone_complete(milestone_id: str) -> dict:
 
 
 def metrics() -> dict:
-    s = role_dashboard_summary() or {}
-    if not s or not any(key in s for key in ("active_projects", "plan_pending_gm", "pending_decisions", "open_escalations")):
-        s = role_dashboard_summary_v36() or {}
-
-    summary = dict(s)
-    summary.setdefault("active_projects", 0)
-    summary.setdefault("pending_decisions", 0)
-    summary.setdefault("plan_pending_gm", 0)
-    summary.setdefault("plan_total", 0)
-    summary.setdefault("open_tasks", 0)
-    summary.setdefault("open_escalations", 0)
-    summary.setdefault("pending_gm_rfi", summary.get("pending_decisions", 0))
-
+    s = role_dashboard_summary()
     return {
-        "active_projects": int(summary.get("active_projects", 0)),
-        "pending_gm_rfi": int(summary.get("pending_gm_rfi", summary.get("pending_decisions", 0))),
-        "rfi_allocation": int(summary.get("open_tasks", 0)),
-        "plan_pending_gm": int(summary.get("plan_pending_gm", 0)),
-        "plan_total": int(summary.get("plan_total", 0)),
-        "open_tasks": int(summary.get("open_tasks", 0)),
-        "open_escalations": int(summary.get("open_escalations", 0)),
+        "active_projects": int(s.get("active_projects", 0)),
+        "pending_gm_rfi": int(s.get("pending_decisions", 0)),
+        "rfi_allocation": int(s.get("open_tasks", 0)),
+        "plan_pending_gm": int(s.get("plan_pending_gm", 0)),
+        "plan_total": int(s.get("plan_total", 0)),
+        "open_tasks": int(s.get("open_tasks", 0)),
+        "open_escalations": int(s.get("open_escalations", 0)),
         "role": profile()["role"],
     }
 
@@ -871,7 +859,7 @@ def my_work_queue() -> list[dict]:
 
 # EPAS v2.4 lifecycle / survey schedule helpers
 def survey_schedule_queue(project_id: str | None = None) -> list[dict]:
-    return _cached(f"survey_schedule_queue:{project_id or 'all'}", lambda: _rpc_read('epas_schedule_queue_v36', {'p_project_id': project_id}) or [], 8.0)
+    return _cached(f'survey_schedule_queue:{project_id or 'all'}', lambda: _rpc_read('epas_schedule_queue_v36', {'p_project_id': project_id}) or [], 8.0)
 
 
 def project_timeline(project_id: str, limit: int = 100) -> list[dict]:
@@ -1418,6 +1406,10 @@ def get_user(user_id: str | None) -> dict | None:
     if not user_id: return None
     return (_db().table("profiles").select("id,full_name,email,role,active").eq("id", user_id).limit(1).execute().data or [None])[0]
 
+def list_users(role: str | None = None) -> list[dict]:
+    """Compatibility facade used by project workflow components."""
+    return users(role)
+
 def list_projects(status: str | None = None) -> list[dict]: return projects(status)
 def get_project(project_id: str) -> dict | None: return project(project_id)
 def get_vessel_for_project(project_id: str) -> dict | None: return vessel(project_id)
@@ -1637,3 +1629,4 @@ except Exception:
     # Demo binding errors are surfaced through the demo login/startup screen;
     # production mode never enters this block.
     pass
+
