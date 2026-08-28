@@ -80,10 +80,11 @@ if not project_id:
         )
         view = view_titles[selected_label]
         st.markdown('<div class="psb-sidebar-divider"></div>', unsafe_allow_html=True)
-        if st.button("Sign out", key="global_signout_v413", use_container_width=True):
-            from config.production_auth import sign_out
-            sign_out()
-            st.rerun()
+        with st.container(key="psb_nav_signout"):
+            if st.button("Sign out", key="global_signout_v413", use_container_width=True):
+                from config.production_auth import sign_out
+                sign_out()
+                st.rerun()
 else:
     view = "project_context"
 
