@@ -520,15 +520,27 @@ def render_readonly_stakeholder():
 
     if vessel:
         with st.expander("Vessel particulars", expanded=True):
-            st.write({
-                "IMO / Registration": vessel.get("imo_number"),
-                "Owner": vessel.get("owner_company"),
-                "LOA (m)": vessel.get("loa_m"),
-                "Beam (m)": vessel.get("beam_m"),
-                "Draft (m)": vessel.get("draft_m"),
-                "Power (kW)": vessel.get("power_kw"),
-                "Speed (knots)": vessel.get("speed_knots"),
-            })
+            st.caption("Registered identity and principal technical dimensions")
+
+            identity = st.columns([1.1, 2.2, 1.1])
+            identity[0].metric("IMO / Registration", vessel.get("imo_number") or "—")
+            identity[1].metric("Registered Owner", vessel.get("owner_company") or "—")
+            identity[2].metric(
+                "Class Status",
+                str(vessel.get("class_status") or "—").replace("_", " ").title(),
+            )
+
+            def _measurement(value, unit):
+                if value in (None, ""):
+                    return "—"
+                return f"{value:,} {unit}" if isinstance(value, (int, float)) else f"{value} {unit}"
+
+            dimensions = st.columns(5)
+            dimensions[0].metric("Length Overall", _measurement(vessel.get("loa_m"), "m"))
+            dimensions[1].metric("Beam", _measurement(vessel.get("beam_m"), "m"))
+            dimensions[2].metric("Draft", _measurement(vessel.get("draft_m"), "m"))
+            dimensions[3].metric("Propulsion Power", _measurement(vessel.get("power_kw"), "kW"))
+            dimensions[4].metric("Service Speed", _measurement(vessel.get("speed_knots"), "kn"))
 
     st.markdown("### Stakeholder-visible project information")
     # v1.9 fleet/vessel view: Owner, Ship Management and Shipyard get a
@@ -639,3 +651,4 @@ def render_readonly_stakeholder():
             st.info("No notifications.")
         for n in notes[:30]:
             st.write(f"**{n.get('title','Notification')}** · {n.get('body','')}")
+
