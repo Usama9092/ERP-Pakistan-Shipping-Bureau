@@ -853,5 +853,29 @@ EPAS_V413_SIDEBAR_CSS = r"""
 [data-testid="stSidebar"] .stButton > button { width:100% !important; min-height:38px !important; white-space:nowrap !important; }
 @media (max-width:900px) { [data-testid="stSidebar"] { width:250px !important; } }
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] { display:none !important; }
+
+/* Final navigation lock: suppress every Streamlit sidebar toggle variant.
+   Streamlit has renamed this control across releases, so cover both its
+   test ids and accessible labels.  The PSB rail itself is not collapsible. */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebar"] button[kind="header"],
+[data-testid="stSidebar"] button[kind="headerNoPadding"],
+button[aria-label="Collapse sidebar"],
+button[aria-label="Expand sidebar"],
+button[aria-label="Close sidebar"],
+button[aria-label*="sidebar" i][title*="sidebar" i] {
+  display:none !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+  width:0 !important;
+  height:0 !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
 """
 
