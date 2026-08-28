@@ -754,9 +754,11 @@ EPAS_V413_SIDEBAR_CSS = r"""
 [data-testid="collapsedControl"] { display:none !important; }
 
 .st-key-psb_fixed_nav {
-  position:fixed !important; left:0 !important; top:0 !important; bottom:0 !important;
+  position:fixed !important; inset:0 auto 0 0 !important; left:0 !important; right:auto !important;
+  top:0 !important; bottom:0 !important;
   width:300px !important; height:100vh !important; box-sizing:border-box !important;
-  padding:34px 24px 24px !important; overflow-y:auto !important; overflow-x:hidden !important;
+  min-width:300px !important; max-width:300px !important;
+  padding:34px 24px 104px !important; overflow-y:auto !important; overflow-x:hidden !important;
   z-index:1000 !important; background:linear-gradient(180deg,var(--psb-shell-2),var(--psb-shell)) !important;
   border-right:1px solid rgba(255,255,255,.08) !important;
   box-shadow:8px 0 28px rgba(2,29,42,.10) !important;
@@ -783,9 +785,22 @@ EPAS_V413_SIDEBAR_CSS = r"""
   border-radius:10px !important; font-weight:750 !important;
 }
 .st-key-psb_fixed_nav .stButton > button:hover { background:rgba(255,255,255,.09) !important; }
-@media (min-width:721px) and (max-width:900px) { .st-key-psb_fixed_nav { width:250px !important; padding:28px 18px 20px !important; } }
+.st-key-psb_fixed_nav .st-key-psb_nav_signout {
+  position:absolute !important; left:24px !important; right:24px !important; bottom:24px !important;
+  z-index:2 !important; padding-top:14px !important;
+  background:linear-gradient(180deg,rgba(3,34,49,0),var(--psb-shell) 28%) !important;
+}
+.st-key-psb_fixed_nav .st-key-psb_nav_signout button {
+  min-height:48px !important; background:rgba(255,255,255,.065) !important;
+  border:1px solid rgba(255,255,255,.16) !important; color:#FFFFFF !important;
+}
+@media (min-width:721px) and (max-width:900px) {
+  .st-key-psb_fixed_nav { width:250px !important; min-width:250px !important; max-width:250px !important; padding:28px 18px 104px !important; }
+  .st-key-psb_fixed_nav .st-key-psb_nav_signout { left:18px !important; right:18px !important; }
+}
 @media (max-width:720px) {
-  .st-key-psb_fixed_nav { position:relative !important; width:100% !important; height:auto !important; padding:18px !important; }
+  .st-key-psb_fixed_nav { position:relative !important; inset:auto !important; width:100% !important; min-width:0 !important; max-width:none !important; height:auto !important; padding:18px !important; }
+  .st-key-psb_fixed_nav .st-key-psb_nav_signout { position:relative !important; inset:auto !important; margin-top:18px !important; }
 }
 
 /* Archived sidebar compatibility rules below; the active application does not render st.sidebar. */
