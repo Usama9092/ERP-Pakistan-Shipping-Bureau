@@ -6,6 +6,8 @@ left project navigation changes by authenticated role.
 """
 from __future__ import annotations
 
+from datetime import date
+
 import streamlit as st
 
 from config import settings as cfg
@@ -427,12 +429,77 @@ def _survey_status(role, pid, project, vessel, health):
     phase_rows = _safe(lambda: pq.project_phase_status(pid), "Survey phase status") or []
     current_cycle = health.get("current_cycle") or "—"
     next_due = health.get("next_survey_due") or (vessel.get("next_survey_due") if vessel else None) or "—"
-    c = st.columns(5)
+    c = st.columns(6)
     c[0].metric("Current Phase", str(health.get("current_phase") or "—").replace("_"," " ).title())
     c[1].metric("Current Cycle", current_cycle)
-    c[2].metric("Next Survey", next_due)
-    c[3].metric("Open Observations", health.get("open_observations", 0))
-    c[4].metric("Overdue Tasks", health.get("overdue_tasks", 0))
+    c[2].metric("Last Survey", (vessel or {}).get("last_survey_date") or "—")
+    c[3].metric("Next Survey Due", next_due)
+    c[4].metric("Open Observations", health.get("open_observations", 0))
+    c[5].metric("Overdue Tasks", health.get("overdue_tasks", 0))
+
+    st.markdown("#### Due Certificates")
+    certs = _safe(lambda: pq.certificates(pid), "Due certificates") or []
+    certs = sorted(certs, key=lambda row: str(row.get("expiry_date") or "9999-12-31"))
+    if not certs:
+        st.info("No certificates have been issued for this project.")
+    for cert in certs:
+        expiry = cert.get("expiry_date")
+        status = str(cert.get("status") or "active").replace("_", " ").title()
+        cols = st.columns([1.7, 1.5, 1.25, 1.2])
+        cols[0].markdown(f"**{cert.get('cert_number') or 'Certificate'}**")
+        cols[1].write(str(cert.get("cert_type") or "—").replace("_", " ").title())
+        cols[2].write(f"Due: {expiry or '—'}")
+        cols[3].write(status)
+
+    stakeholder_phases = {
+        "owner": ("in_service", "In-Service Survey"),
+        "ship_management": ("in_service", "In-Service Survey"),
+        "shipyard": ("nsc_survey", "NSC Survey"),
+    }
+    if role in stakeholder_phases and vessel:
+        phase, default_type = stakeholder_phases[role]
+        with st.expander("Request an RFI", expanded=False):
+            st.caption("Authorized requests are submitted to GM Intake for review and allocation.")
+            survey_type = st.text_input(
+                "Survey type",
+                value=default_type,
+                key=f"project_status_rfi_type_{role}_{pid}",
+            )
+            due_value = next_due if next_due != "—" else date.today()
+            try:
+                due_value = due_value if isinstance(due_value, date) else date.fromisoformat(str(due_value)[:10])
+            except (TypeError, ValueError):
+                due_value = date.today()
+            requested_date = st.date_input(
+                "Requested survey date",
+                value=due_value,
+                key=f"project_status_rfi_date_{role}_{pid}",
+            )
+            priority = st.selectbox(
+                "Priority",
+                ["low", "medium", "high"],
+                index=1,
+                key=f"project_status_rfi_priority_{role}_{pid}",
+            )
+            scope = st.text_area(
+                "Survey scope / request details",
+                key=f"project_status_rfi_scope_{role}_{pid}",
+            )
+            if st.button(
+                "Submit RFI to GM Intake →",
+                type="primary",
+                key=f"project_status_rfi_submit_{role}_{pid}",
+            ):
+                if not survey_type.strip() or not scope.strip():
+                    st.error("Survey type and request details are required.")
+                elif _safe(
+                    lambda: pq.stakeholder_create_rfi(
+                        pid, vessel["id"], phase, survey_type, requested_date, priority, scope
+                    ),
+                    "RFI request",
+                ):
+                    st.success("RFI submitted successfully and received by GM Intake.")
+                    st.rerun()
 
     st.markdown("#### Project Phase Status")
     for row in phase_rows:
