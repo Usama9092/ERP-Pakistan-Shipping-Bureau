@@ -40,13 +40,13 @@ def render_gm(project_id: str | None = None):
     health = pq.project_health_v36(pid)
     if health:
         c=st.columns(7)
-        c[0].metric("Completion", f"{health['completion_pct']}%")
-        c[1].metric("Plan", f"{health['plan_completion_pct']}%")
-        c[2].metric("Survey", f"{health['survey_completion_pct']}%")
-        c[3].metric("Open tasks", health["open_tasks"])
-        c[4].metric("Overdue", health["overdue_tasks"])
-        c[5].metric("Escalations", health["open_escalations"])
-        c[6].metric("Closure ready", "YES" if health["closure_ready"] else "NO")
+        c[0].metric("Completion", f"{health.get('completion_pct', 0)}%")
+        c[1].metric("Plan", f"{health.get('plan_completion_pct', 0)}%")
+        c[2].metric("Survey", f"{health.get('survey_completion_pct', 0)}%")
+        c[3].metric("Open tasks", health.get("open_tasks", 0))
+        c[4].metric("Overdue", health.get("overdue_tasks", 0))
+        c[5].metric("Escalations", health.get("open_escalations", 0))
+        c[6].metric("Closure ready", "YES" if health.get("closure_ready", False) else "NO")
 
     tabs=st.tabs(["Released Documents","Stakeholder Milestones","Certificate Lifecycle","Closure Checklist","Escalation Actions","Audit Access"])
     with tabs[0]:
