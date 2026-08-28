@@ -365,7 +365,10 @@ def register_appraisal_artifact(drawing_id: str, artifact_type: str,
 
 
 def is_project_manager_eligible(project_id: str, user_id: str) -> bool:
-    u = q.get_user(user_id)
+    if is_demo_mode():
+        u = next((profile for profile in _store()["profiles"] if profile.get("id") == user_id), None)
+    else:
+        u = q.get_user(user_id)
     return bool(u and u["role"] == cfg.ROLE_DM)
 
 
