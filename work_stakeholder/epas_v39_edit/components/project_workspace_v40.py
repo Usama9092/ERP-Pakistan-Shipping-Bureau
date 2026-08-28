@@ -66,7 +66,6 @@ def render_project_launcher(role: str):
     head_left, head_actions = st.columns([4.3, 2.2])
     with head_left:
         st.markdown("<div class='page-title'>Projects</div>", unsafe_allow_html=True)
-        st.caption("Open a project or manage the reusable stakeholder directory used by GM Project Creation.")
     with head_actions:
         if role == "gm":
             a1, a2 = st.columns(2)
@@ -97,22 +96,22 @@ def render_project_launcher(role: str):
             render_create_project()
         st.markdown("---")
 
-    search = st.text_input(
-        "Search project",
-        placeholder="Project code, vessel name or vessel type…",
-        label_visibility="collapsed",
-        key=f"psb_project_search_{role}",
-    )
+    with st.expander("Authorized global search", expanded=False):
+        search = st.text_input(
+            "Search project, vessel, RFI or certificate",
+            placeholder="Enter at least 2 characters",
+            key=f"project_global_search_{role}",
+        )
+        if len(search.strip()) >= 2:
+            results = _safe(lambda: pq.global_search_v36(search, 25), "Search") or []
+            if not results:
+                st.info("No authorized matches found.")
+            for row in results:
+                st.markdown(
+                    f"**{str(row.get('result_type', '')).title()}** · {row.get('title', '—')}"
+                )
 
     projects = _safe(lambda: pq.projects("active"), "Project register") or []
-    if search.strip():
-        q = search.lower()
-        projects = [
-            p for p in projects
-            if q in str(p.get("project_code","")).lower()
-            or q in str(p.get("name","")).lower()
-            or q in str(p.get("vessel_type","")).lower()
-        ]
 
     if not projects:
         st.info("No projects are available to this account.")
