@@ -507,7 +507,12 @@ def _manager_assignment(d: dict, project: dict) -> None:
         st.error("No eligible Plan Appraisal Manager is available for this project.")
         return
     options = [u["id"] for u in eligible]
-    selected = st.selectbox("Plan Appraisal Manager", options, format_func=lambda x: q.get_user(x)["full_name"], key=f"pa_mgr_{d['id']}")
+    manager_names = {u["id"]: u.get("full_name") or u.get("email") or "Department Manager" for u in eligible}
+    selected = st.selectbox(
+        "Plan Appraisal Manager", options,
+        format_func=lambda user_id: manager_names.get(user_id, "Department Manager"),
+        key=f"pa_mgr_{d['id']}",
+    )
     if st.button("Hand over to Manager →", key=f"pa_handover_{d['id']}", type="primary"):
         uq.assign_plan_manager(d["id"], selected, q.current_gm()["id"])
         st.toast("Plan appraisal handed over to the manager.", icon="📨")
