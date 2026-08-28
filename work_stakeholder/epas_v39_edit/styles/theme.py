@@ -756,25 +756,24 @@ EPAS_V413_SIDEBAR_CSS = r"""
 @media (min-width:901px) {
   [data-testid="stSidebar"] {
     width:300px !important; min-width:300px !important; max-width:300px !important;
+    display:block !important; transform:none !important; translate:none !important;
+    visibility:visible !important; opacity:1 !important; left:0 !important;
   }
   body:has([data-testid="stSidebar"]) [data-testid="stAppViewContainer"] {
     margin-left:300px !important;
     width:calc(100% - 300px) !important;
   }
-  [data-testid="stSidebarCollapseButton"] { display:flex !important; }
+  [data-testid="stSidebarCollapseButton"],
   [data-testid="stSidebarCollapsedControl"],
   [data-testid="collapsedControl"] {
-    display:flex !important; position:fixed !important; top:10px !important; left:10px !important;
-    z-index:1001 !important; visibility:visible !important; opacity:1 !important;
-  }
-  body:has([data-testid="stSidebarCollapsedControl"]) [data-testid="stAppViewContainer"],
-  body:has([data-testid="collapsedControl"]) [data-testid="stAppViewContainer"] {
-    margin-left:0 !important; width:100% !important;
+    display:none !important; visibility:hidden !important; pointer-events:none !important;
   }
 }
 @media (min-width:721px) and (max-width:900px) {
   [data-testid="stSidebar"] {
     width:250px !important; min-width:250px !important; max-width:250px !important;
+    display:block !important; transform:none !important; translate:none !important;
+    visibility:visible !important; opacity:1 !important; left:0 !important;
   }
   body:has([data-testid="stSidebar"]) [data-testid="stAppViewContainer"] {
     margin-left:250px !important;
