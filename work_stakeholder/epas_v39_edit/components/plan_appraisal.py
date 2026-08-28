@@ -9,21 +9,25 @@ transitions are mirrored by the upgrade_schema.sql tables for Supabase.
 """
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import streamlit as st
 
 from config import settings as cfg
+from config.supabase_client import is_demo_mode
 from database import production_queries as q
 from database import upgrade_queries as uq
 from utils import helpers as h
 
 
-def render(project: dict | None = None) -> None:
+def render(project: dict | None = None, role: str | None = None) -> None:
     if project is None:
         pid = st.session_state.get("selected_project_id")
         project = q.get_project(pid) if pid else None
     if not project:
         st.warning("No project selected.")
         return
+    role = role or q.profile().get("role", "readonly")
 
     st.markdown('<div class="section-title">Plan Appraisal</div>', unsafe_allow_html=True)
     st.caption(
@@ -43,6 +47,9 @@ def render(project: dict | None = None) -> None:
             "Every decision remains tied to the project, drawing number and revision. "
             "An accepted revision is locked; a conditional or returned decision creates a controlled instruction for follow-up."
         )
+
+    if role in {"designer", "owner", "ship_management", "shipyard"}:
+        _new_plan_submission(project, role)
 
     drawings = uq.list_plan_drawings(project["id"])
     _summary(drawings)
@@ -71,24 +78,26 @@ def render(project: dict | None = None) -> None:
         f"Approved Plans ({len(approved)})",
     ])
     with tabs[0]:
-        _render_group(intake, project, "No newly received plans are awaiting allocation.")
+        _render_group(intake, project, role, "No newly received plans are awaiting allocation.")
     with tabs[1]:
-        _render_group(review, project, "No plans are currently in technical or manager review.")
+        _render_group(review, project, role, "No plans are currently in technical or manager review.")
     with tabs[2]:
         _revision_register(revisions, project)
     with tabs[3]:
         if not decisions:
             st.success("No plan decisions are currently waiting for GM action.")
         for d in decisions:
-            if d["status"] == uq.PA_PENDING_GM:
+            if d["status"] == uq.PA_PENDING_GM and role == "gm":
                 _gm_review_card(d, project)
-            else:
+            elif d["status"] == uq.PA_REJECTED and role == "gm":
                 _gm_designer_correction_card(d, project)
+            else:
+                _drawing_card(d, project, role)
     with tabs[4]:
-        _render_group(approved, project, "No plans have received final GM approval yet.")
+        _render_group(approved, project, role, "No plans have received final GM approval yet.")
 
 
-def _render_group(drawings: list[dict], project: dict, empty_message: str) -> None:
+def _render_group(drawings: list[dict], project: dict, role: str, empty_message: str) -> None:
     if not drawings:
         st.info(empty_message)
         return
@@ -97,7 +106,7 @@ def _render_group(drawings: list[dict], project: dict, empty_message: str) -> No
     ])
     for drawing_tab, drawing in zip(drawing_tabs, drawings):
         with drawing_tab:
-            _drawing_card(drawing, project)
+            _drawing_card(drawing, project, role)
 
 
 def _revision_register(drawings: list[dict], project: dict) -> None:
@@ -171,7 +180,7 @@ def _summary(drawings: list[dict]) -> None:
     c4.metric("Pending GM", pending)
 
 
-def _drawing_card(d: dict, project: dict) -> None:
+def _drawing_card(d: dict, project: dict, role: str) -> None:
     with st.container(border=True):
         engineer = q.get_user(d.get("engineer_id"))
         manager = q.get_user(d.get("manager_id"))
@@ -191,8 +200,19 @@ def _drawing_card(d: dict, project: dict) -> None:
             "Drawing Overview", "Documents", "Revisions", "Correspondence & Workflow"
         ])
         with overview_tab:
-            if d["status"] in (uq.PA_SUBMITTED, uq.PA_DESIGNER_RESPONSE):
+            if role == "gm" and d["status"] == uq.PA_SUBMITTED:
                 _manager_assignment(d, project)
+            elif role == "dm" and d["status"] in {uq.PA_ASSIGNED_MANAGER, uq.PA_MANAGER_REVIEW}:
+                _dm_plan_action(d, project)
+            elif role == "engineer" and d["status"] in {
+                uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED,
+                uq.PA_DESIGNER_RESPONSE,
+            }:
+                _engineer_plan_action(d)
+            elif role == "designer" and d["status"] in {
+                uq.PA_OBSERVATION_RAISED, uq.PA_REJECTED, uq.PA_DESIGNER_RESPONSE,
+            }:
+                _designer_revision_action(d)
             elif d["status"] in (uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED):
                 _resource_snapshot(d)
             elif d["status"] == uq.PA_OBSERVATION_RAISED:
@@ -292,11 +312,20 @@ def _document_package(d: dict) -> None:
         c1, c2 = st.columns(2)
         with c1:
             st.caption(f"Design drawing PDF · Rev {d['revision']}")
-            _pdf_download(d, "design drawing PDF", current, "Designer Drawing")
+            if is_demo_mode():
+                _pdf_download(d, "design drawing PDF", current, "Designer Drawing")
+            else:
+                try:
+                    st.link_button("Open design drawing PDF", q.project_document_signed_url(d["document_id"]), use_container_width=True)
+                except Exception:
+                    st.warning("The controlled drawing file is not available to this role.")
         with c2:
             design_file = f'{d["drawing_no"]}_Design-Calculations_Rev-{d["revision"]:02d}.pdf'
             st.caption(f"Design calculations / design report · Rev {d['revision']}")
-            _pdf_download(d, "design report PDF", design_file, "Designer Design Report")
+            if is_demo_mode():
+                _pdf_download(d, "design report PDF", design_file, "Designer Design Report")
+            else:
+                st.info("Design report is registered with the project document package when supplied.")
         st.caption(
             f'Also registered: {d["drawing_no"]}_Rule-Compliance_Rev-{d["revision"]:02d}.xlsx · '
             f'{d["drawing_no"]}_Transmittal_Rev-{d["revision"]:02d}.pdf'
@@ -306,20 +335,166 @@ def _document_package(d: dict) -> None:
             uq.PA_OBSERVATION_RAISED, uq.PA_DESIGNER_RESPONSE, uq.PA_REVIEW_RESUBMITTED,
             uq.PA_MANAGER_REVIEW, uq.PA_PENDING_GM, uq.PA_APPROVED, uq.PA_REJECTED,
         }
+        artifacts = uq.list_appraisal_artifacts(d["id"])
         if d["status"] in appraised_statuses:
             st.divider()
             st.markdown("**B · Files produced by PSB after appraisal**")
             c3, c4 = st.columns(2)
             with c3:
-                appraised_file = f'{d["drawing_no"]}_Rev-{d["revision"]:02d}_PSB-Appraised-Drawing.pdf'
                 st.caption("Appraised drawing PDF with review status and controlled revision")
-                _pdf_download(d, "appraised drawing PDF", appraised_file, "PSB Appraised Drawing")
+                artifact = next((x for x in artifacts if x.get("artifact_type") == "appraised_drawing"), None)
+                if artifact and not is_demo_mode():
+                    st.link_button("Open PSB appraised drawing PDF", q.project_storage_signed_url(artifact["storage_path"]), use_container_width=True)
+                elif artifact:
+                    _pdf_download(d, "appraised drawing PDF", artifact["file_name"], "PSB Appraised Drawing")
+                else:
+                    st.warning("Awaiting engineer-uploaded appraised drawing PDF.")
             with c4:
-                report_file = f'{d["drawing_no"]}_Rev-{d["revision"]:02d}_Design-Appraisal-Report.pdf'
                 st.caption("Design Appraisal Report PDF with findings, observations and recommendation")
-                _pdf_download(d, "Design Appraisal Report PDF", report_file, "Design Appraisal Report")
+                artifact = next((x for x in artifacts if x.get("artifact_type") == "appraisal_report"), None)
+                if artifact and not is_demo_mode():
+                    st.link_button("Open Design Appraisal Report PDF", q.project_storage_signed_url(artifact["storage_path"]), use_container_width=True)
+                elif artifact:
+                    _pdf_download(d, "Design Appraisal Report PDF", artifact["file_name"], "Design Appraisal Report")
+                else:
+                    st.warning("Awaiting engineer-uploaded Design Appraisal Report PDF.")
         else:
             st.info("PSB appraisal PDFs will be created after the authorised engineer completes the technical appraisal.")
+
+
+def _new_plan_submission(project: dict, role: str) -> None:
+    """Project-bound intake available to the authorised submitting stakeholder."""
+    with st.expander("Submit a new design plan to this project", expanded=False):
+        st.caption("The initial PDF becomes Revision 1 and is routed to GM intake for this project only.")
+        c1, c2 = st.columns(2)
+        drawing_no = c1.text_input("Drawing number", key=f"pa_new_no_{project['id']}_{role}")
+        title = c2.text_input("Drawing title", key=f"pa_new_title_{project['id']}_{role}")
+        discipline = st.selectbox(
+            "Discipline", ["Hull & Structure", "Stability", "Machinery", "Electrical", "Fire Safety"],
+            key=f"pa_new_disc_{project['id']}_{role}",
+        )
+        drawing_pdf = st.file_uploader(
+            "Design drawing PDF · Revision 1", type=["pdf"],
+            key=f"pa_new_pdf_{project['id']}_{role}",
+        )
+        note = st.text_area(
+            "Designer transmittal / scope note", key=f"pa_new_note_{project['id']}_{role}",
+        )
+        if st.button("Submit plan to GM intake", type="primary", key=f"pa_new_submit_{project['id']}_{role}"):
+            if not drawing_no.strip() or not title.strip() or not note.strip() or drawing_pdf is None:
+                st.error("Drawing number, title, PDF and transmittal note are required.")
+            else:
+                try:
+                    actor = q.profile()
+                    uq.submit_initial_plan(
+                        project["id"], drawing_no, title, discipline, drawing_pdf, note, actor["id"]
+                    )
+                    st.success("Revision 1 was registered in this project and sent to GM intake.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Plan submission could not be completed: {exc}")
+
+
+def _dm_plan_action(d: dict, project: dict) -> None:
+    actor = q.profile()
+    if d.get("manager_id") and d.get("manager_id") != actor.get("id"):
+        st.info("This appraisal is assigned to another Department Manager. You have review-only access.")
+        return
+    if d["status"] == uq.PA_ASSIGNED_MANAGER:
+        engineers = uq.eligible_engineers(d["discipline"])
+        if not engineers:
+            st.error("No authorised, competent and available engineer is eligible for this discipline.")
+            return
+        engineer_ids = [item["id"] for item in engineers]
+        selected = st.selectbox(
+            "Assign authorised engineer", engineer_ids,
+            format_func=lambda user_id: q.get_user(user_id)["full_name"],
+            key=f"pa_dm_engineer_{d['id']}",
+        )
+        if st.button("Assign for technical appraisal", type="primary", key=f"pa_dm_assign_{d['id']}"):
+            uq.assign_engineer(d["id"], selected, actor["id"])
+            st.rerun()
+        return
+
+    st.markdown("**DM appraisal review**")
+    decision = st.selectbox(
+        "Manager decision",
+        ["Appraisal Approved", "Appraisal Requires Changes", "Design Rejected / Amended"],
+        key=f"pa_dm_decision_{d['id']}",
+    )
+    note = st.text_area("Manager review note", key=f"pa_dm_note_{d['id']}")
+    if st.button("Record DM decision", type="primary", key=f"pa_dm_record_{d['id']}"):
+        if not note.strip():
+            st.error("A controlled manager review note is required.")
+        else:
+            uq.manager_review_decision(d["id"], actor["id"], decision, note)
+            st.rerun()
+
+
+def _engineer_plan_action(d: dict) -> None:
+    actor = q.profile()
+    if d.get("engineer_id") != actor.get("id"):
+        st.info("This drawing is assigned to another engineer. You have review-only access.")
+        return
+    if d["status"] == uq.PA_ASSIGNED_ENGINEER:
+        if st.button("Start technical appraisal", type="primary", key=f"pa_eng_start_{d['id']}"):
+            uq.start_engineer_review(d["id"], actor["id"])
+            st.rerun()
+        return
+    note = st.text_area(
+        "Technical appraisal findings / rule references", key=f"pa_eng_note_{d['id']}",
+    )
+    cfile1, cfile2 = st.columns(2)
+    appraised_pdf = cfile1.file_uploader(
+        "PSB appraised drawing PDF", type=["pdf"], key=f"pa_eng_drawing_pdf_{d['id']}"
+    )
+    report_pdf = cfile2.file_uploader(
+        "Design Appraisal Report PDF", type=["pdf"], key=f"pa_eng_report_pdf_{d['id']}"
+    )
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Complete appraisal · Recommend acceptance", type="primary", key=f"pa_eng_accept_{d['id']}"):
+            if not note.strip() or appraised_pdf is None or report_pdf is None:
+                st.error("Findings, appraised drawing PDF and Design Appraisal Report PDF are required.")
+            else:
+                uq.register_appraisal_artifact(d["id"], "appraised_drawing", appraised_pdf, actor["id"])
+                uq.register_appraisal_artifact(d["id"], "appraisal_report", report_pdf, actor["id"])
+                uq.engineer_complete_review(d["id"], actor["id"], True, note)
+                st.rerun()
+    with c2:
+        if st.button("Raise observation / correction", key=f"pa_eng_obs_{d['id']}"):
+            if not note.strip() or appraised_pdf is None or report_pdf is None:
+                st.error("Correction details and both controlled appraisal PDFs are required.")
+            else:
+                uq.register_appraisal_artifact(d["id"], "appraised_drawing", appraised_pdf, actor["id"])
+                uq.register_appraisal_artifact(d["id"], "appraisal_report", report_pdf, actor["id"])
+                uq.engineer_complete_review(d["id"], actor["id"], False, note)
+                st.rerun()
+
+
+def _designer_revision_action(d: dict) -> None:
+    actor = q.profile()
+    if d.get("designer_id") != actor.get("id"):
+        st.info("Only the submitting Designer can upload the next revision.")
+        return
+    observations = uq.list_plan_observations(d["id"], open_only=True)
+    for observation in observations:
+        st.warning(f'{observation["obs_code"]} · {observation["severity"]}: {observation["description"]}')
+    response = st.text_area("Designer response / correction summary", key=f"pa_des_response_{d['id']}")
+    revision_pdf = st.file_uploader(
+        f"Revised design drawing PDF · next revision after Rev {d['revision']}", type=["pdf"],
+        key=f"pa_des_revision_{d['id']}",
+    )
+    if st.button("Submit revised drawing for re-appraisal", type="primary", key=f"pa_des_submit_{d['id']}"):
+        if not response.strip() or revision_pdf is None:
+            st.error("A response and revised PDF are required.")
+        else:
+            if observations:
+                uq.designer_respond(d["id"], actor["id"], response)
+            else:
+                uq.designer_amendment_response(d["id"], actor["id"], response)
+            uq.resubmit_for_engineer_review(d["id"], actor["id"], revision_pdf)
+            st.rerun()
 
 
 def _manager_assignment(d: dict, project: dict) -> None:
