@@ -502,7 +502,7 @@ def _manager_assignment(d: dict, project: dict) -> None:
     # ``list_users`` compatibility name is not available on every deployed
     # Streamlit worker during rolling upgrades.
     dms = uq.project_manager_candidates(project["id"])
-    eligible = [u for u in dms if uq.is_project_manager_eligible(project["id"], u["id"])]
+    eligible = [u for u in dms if u.get("role") == cfg.ROLE_DM and u.get("active", True)]
     if not eligible:
         st.error("No eligible Plan Appraisal Manager is available for this project.")
         return
