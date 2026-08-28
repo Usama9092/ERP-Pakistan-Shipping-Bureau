@@ -92,16 +92,23 @@ def _render_group(drawings: list[dict], project: dict, empty_message: str) -> No
     if not drawings:
         st.info(empty_message)
         return
-    for drawing in drawings:
-        _drawing_card(drawing, project)
+    drawing_tabs = st.tabs([
+        f"{drawing['drawing_no']} · Rev {drawing['revision']}" for drawing in drawings
+    ])
+    for drawing_tab, drawing in zip(drawing_tabs, drawings):
+        with drawing_tab:
+            _drawing_card(drawing, project)
 
 
 def _revision_register(drawings: list[dict], project: dict) -> None:
     if not drawings:
         st.info("No revisions or plan observations have been recorded for this project.")
         return
-    for drawing in drawings:
-        with st.container(border=True):
+    drawing_tabs = st.tabs([
+        f"{drawing['drawing_no']} · Rev {drawing['revision']}" for drawing in drawings
+    ])
+    for drawing_tab, drawing in zip(drawing_tabs, drawings):
+        with drawing_tab:
             st.markdown(
                 f"**{drawing['drawing_no']} — {drawing['title']}** · Current revision "
                 f"**{drawing['revision']}** · {uq.PA_STATUS_LABELS.get(drawing['status'], drawing['status'])}"
@@ -180,28 +187,50 @@ def _drawing_card(d: dict, project: dict) -> None:
         )
         st.progress(uq.plan_progress(d["status"]))
 
-        _document_package(d)
+        overview_tab, documents_tab, revisions_tab, correspondence_tab = st.tabs([
+            "Drawing Overview", "Documents", "Revisions", "Correspondence & Workflow"
+        ])
+        with overview_tab:
+            if d["status"] in (uq.PA_SUBMITTED, uq.PA_DESIGNER_RESPONSE):
+                _manager_assignment(d, project)
+            elif d["status"] in (uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED):
+                _resource_snapshot(d)
+            elif d["status"] == uq.PA_OBSERVATION_RAISED:
+                obs = uq.list_plan_observations(d["id"], open_only=True)
+                for o in obs:
+                    st.warning(f'{o["obs_code"]} · {o["severity"]}: {o["description"]}')
+            elif d["status"] == uq.PA_MANAGER_REVIEW:
+                st.info("Engineer review completed. Manager review is required before GM sign-off.")
+            elif d["status"] == uq.PA_APPROVED:
+                st.success("Approved drawing — current revision is locked.")
 
-        if d["status"] in (uq.PA_SUBMITTED, uq.PA_DESIGNER_RESPONSE):
-            _manager_assignment(d, project)
-        elif d["status"] in (uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED):
-            _resource_snapshot(d)
-        elif d["status"] == uq.PA_OBSERVATION_RAISED:
-            obs = uq.list_plan_observations(d["id"], open_only=True)
-            for o in obs:
-                st.warning(f'{o["obs_code"]} · {o["severity"]}: {o["description"]}')
-        elif d["status"] == uq.PA_MANAGER_REVIEW:
-            st.info("Engineer review completed. Manager review is required before GM sign-off.")
-        elif d["status"] == uq.PA_APPROVED:
-            st.success("Approved drawing — current revision is locked.")
+        with documents_tab:
+            _document_package(d)
 
-        with st.expander("Revision history / workflow", expanded=False):
+        with revisions_tab:
             for r in uq.list_document_revisions(d["document_id"]):
-                st.markdown(f'**Rev {r["revision"]}** · {r["status"]} · {r["file_name"]} · {r["created_at"]}')
+                current = " · **CURRENT**" if int(r["revision"]) == int(d["revision"]) else ""
+                st.markdown(f'**Rev {r["revision"]}** · {r["status"]}{current}')
+                st.caption(f'{r["file_name"]} · {r["created_at"]}')
+
+        with correspondence_tab:
+            observations = uq.list_plan_observations(d["id"], open_only=False)
+            for observation in observations:
+                st.markdown(
+                    f'**{observation.get("obs_code", "Observation")}** · '
+                    f'{observation.get("severity", "—")} · {str(observation.get("status", "open")).title()}'
+                )
+                st.caption(observation.get("description") or "No description recorded.")
+                response = observation.get("designer_response") or observation.get("response")
+                if response:
+                    st.info(f"Designer response: {response}")
             events = uq.list_plan_events(d["id"])
+            if not events and not observations:
+                st.caption("No correspondence or workflow events have been recorded for this drawing.")
             for e in events:
                 actor = q.get_user(e.get("actor_id"))
-                st.caption(f'{e["created_at"]} · {actor["full_name"] if actor else "System"} · {e["event_type"]} · {e.get("note", "")}')
+                st.markdown(f'**{str(e["event_type"]).replace("_", " ").title()}** · {actor["full_name"] if actor else "System"}')
+                st.caption(f'{e["created_at"]} · {e.get("note", "")}')
 
 
 def _demo_pdf(title: str, lines: list[str]) -> bytes:
@@ -256,7 +285,8 @@ def _pdf_download(d: dict, label: str, file_name: str, document_type: str) -> No
 
 def _document_package(d: dict) -> None:
     """Separate Designer source files from PSB appraisal deliverables."""
-    with st.expander("Controlled PDF document package", expanded=False):
+    with st.container(border=True):
+        st.markdown("**Controlled PDF document package**")
         current = d.get("current_file_name") or f'{d.get("drawing_no", "Plan")}_Rev-{d.get("revision", 1):02d}.pdf'
         st.markdown("**A · Files received from Designer**")
         c1, c2 = st.columns(2)
