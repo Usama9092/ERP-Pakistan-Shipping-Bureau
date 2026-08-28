@@ -21,14 +21,21 @@ def _safe(fn):
         st.error(str(exc))
         return None
 
-def render_gm():
+def render_gm(project_id: str | None = None):
     projects = pq.projects("active")
     st.markdown("### Governance & Closure Control")
     if not projects:
         st.info("No active projects under GM control.")
         return
     labels = {p["id"]: f"{p['project_code']} · {p['name']}" for p in projects}
-    pid = st.selectbox("Project", list(labels), format_func=lambda x: labels[x], key="v15_gm_project")
+    if project_id:
+        if project_id not in labels:
+            st.error("The selected project is not available to this GM account.")
+            return
+        pid = project_id
+        st.caption(f"Project governance scope: {labels[pid]}")
+    else:
+        pid = st.selectbox("Project", list(labels), format_func=lambda x: labels[x], key="v15_gm_project")
     p = pq.project(pid)
     health = pq.project_health_v36(pid)
     if health:
@@ -173,3 +180,4 @@ def render_dm():
         st.caption(f"{len(snap['open'])} open · {len(snap['overdue'])} overdue · {len(snap['due_7d'])} due within 7 days")
         if snap["overdue"]:
             st.error("SLA breach detected. Use the Escalation tab to create a documented GM recommendation.")
+
