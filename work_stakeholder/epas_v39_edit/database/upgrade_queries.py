@@ -68,7 +68,11 @@ def status_badge_kind(status: str) -> str:
 
 def _store() -> dict:
     """Lazy demo upgrade store, seeded from the base application's data."""
-    db = q._db()
+    if is_demo_mode():
+        from config import demo_runtime
+        db = demo_runtime._db()
+    else:
+        db = q._db()
     db.setdefault("authorizations", [])
     db.setdefault("competencies", [])
     db.setdefault("availability", [])
@@ -722,3 +726,4 @@ def gm_send_to_designer(drawing_id: str, gm_id: str, note: str = "") -> dict:
     create_task(d["project_id"], "PLAN_APPRAISAL_DESIGNER_RESPONSE", gm_id, d["designer_id"], drawing_id=drawing_id, note=f'{d["drawing_no"]} requires correction / amendment: {note}')
     _notify(d["designer_id"], "Drawing correction required", f'{d["drawing_no"]} requires correction / amendment before resubmission.', d["project_id"], "workflow_inbox")
     return d
+
