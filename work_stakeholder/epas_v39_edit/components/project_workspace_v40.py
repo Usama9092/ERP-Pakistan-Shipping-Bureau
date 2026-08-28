@@ -277,19 +277,10 @@ def _render_section(role, section, project, vessel, health):
     elif section == "info":
         _info(project, vessel)
     elif section == "plan_appraisal":
-        if role == "gm":
-            plan_appraisal.render(project)
-        elif role in {"owner", "ship_management"} and "in_service" in {
-            str(x).lower() for x in (project.get("phases") or [])
-        }:
-            _in_service_plan_submission(role, project)
-        else:
-            # Use the role-specific work queue when the role module has one.
-            from components.role_workspaces import render_engineer
-            if role == "engineer":
-                render_engineer()
-            else:
-                _project_task_snapshot(pid, "Plan Appraisal")
+        # One project record is shared by every authorised role.  The component
+        # applies role-specific controls while keeping drawings, revisions,
+        # observations, PDFs and correspondence in the selected project.
+        plan_appraisal.render(project, role)
     elif section == "nsc_survey":
         workflow_tab, control_tab = st.tabs(["RFI Workflow", "Schedule & Control"])
         with workflow_tab:
