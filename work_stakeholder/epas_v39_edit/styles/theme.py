@@ -768,6 +768,9 @@ EPAS_V413_SIDEBAR_CSS = r"""
   [data-testid="collapsedControl"],
   [data-testid="stSidebar"] [data-testid="stBaseButton-headerNoPadding"],
   [data-testid="stSidebar"] button[kind="headerNoPadding"],
+  [data-testid="stSidebar"] button:has(svg),
+  [data-testid="stSidebar"] button:has([data-testid="stIconMaterial"]),
+  [data-testid="stSidebar"] button:has(.material-symbols-rounded),
   [data-testid="stSidebar"] button[aria-label*="Collapse" i],
   [data-testid="stSidebar"] button[aria-label*="Close sidebar" i] {
     display:none !important; visibility:hidden !important; pointer-events:none !important;
