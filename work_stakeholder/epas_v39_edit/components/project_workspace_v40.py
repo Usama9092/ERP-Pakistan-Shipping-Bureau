@@ -198,6 +198,8 @@ def render(role: str, project_id: str | None):
     # and Audit are always available within the project context.
     nav = []
     for label, value, desc in PROJECT_NAV:
+        if role in {"designer", "engineer"} and value in {"nsc_survey", "survey_status"}:
+            continue
         if value == "plan_appraisal" and "plan_appraisal" not in phases:
             continue
         if value == "nsc_survey" and "nsc_survey" not in phases:
