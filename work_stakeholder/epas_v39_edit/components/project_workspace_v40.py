@@ -147,7 +147,7 @@ def render_project_launcher(role: str):
                     open_project(p["id"])
                     st.rerun()
 
-def render(role: str, project_id: str | None):
+def render(role: str, project_id: str | None, nav_host=None):
     if not project_id:
         render_project_launcher(role)
         return
@@ -237,10 +237,10 @@ def render(role: str, project_id: str | None):
         st.session_state["project_nav_key"] = "overview"
     default_label = next((x[0] for x in nav if x[1] == current), labels[0])
 
-    # Project-specific left navigation. The global navigation is intentionally
-    # suppressed once a project is open so the selected project becomes the
-    # primary context for the entire workspace.
-    with st.sidebar:
+    # Project-specific navigation uses the application's custom fixed rail.
+    # Falling back to st.sidebar keeps the component reusable outside app.py.
+    navigation_surface = nav_host if nav_host is not None else st.sidebar
+    with navigation_surface:
         st.markdown('<div class="psb-project-nav-label">PROJECT NAVIGATION</div>', unsafe_allow_html=True)
         selected = st.radio(
             "PROJECT NAVIGATION",
