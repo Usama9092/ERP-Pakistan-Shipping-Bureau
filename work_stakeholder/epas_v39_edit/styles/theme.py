@@ -566,6 +566,7 @@ div[data-testid="stRadio"] label:has(input:checked) {
   padding:28px clamp(20px,5vw,60px) 44px; border:1px solid var(--psb-line); border-radius:22px;
   background:rgba(255,255,255,.92); box-shadow:0 18px 50px rgba(3,19,31,.08);
 }
+.psb-login-panel-marker { display:none; }
 .psb-login-panel__kicker { color:var(--psb-teal); font-size:9px; font-weight:850; letter-spacing:1.25px; }
 .psb-login-panel__title { color:var(--psb-navy); font-size:36px; font-weight:850; margin-top:0; }
 .psb-login-panel__copy { color:var(--psb-muted); font-size:12px; line-height:1.65; margin:8px 0 22px; }
@@ -580,14 +581,14 @@ div[data-testid="stRadio"] label:has(input:checked) {
 @media (max-width: 900px) {
   .psb-topbar { align-items:flex-start; }
   .psb-topbar__context { flex-direction:column; align-items:flex-end; }
-  .psb-login-hero, .psb-login-panel { min-height:560px; }
+  .psb-login-hero, div[data-testid="stColumn"]:has(.psb-login-panel-marker) { min-height:560px; }
 }
 @media (max-width: 720px) {
   .psb-topbar { flex-direction:column; }
   .psb-topbar__context { width:100%; align-items:flex-start; }
   .psb-user-block { align-items:flex-start; }
   .psb-login-hero { min-height:520px; padding:28px 20px; }
-  .psb-login-panel { min-height:auto; }
+  div[data-testid="stColumn"]:has(.psb-login-panel-marker) { min-height:auto; padding:28px 20px; }
   .psb-login-logo-wrap { width:150px; height:175px; }
   .psb-login-hero h1 { font-size:27px !important; }
   div[data-testid="stRadio"] label { padding:7px 9px !important; font-size:10px !important; }
@@ -761,6 +762,18 @@ EPAS_V413_SIDEBAR_CSS = r"""
 [data-testid="stSidebar"] {
   position: fixed !important; left:0 !important; top:0 !important; bottom:0 !important; height:100vh !important;
   overflow:hidden !important; z-index:100 !important;
+}
+@media (min-width:901px) {
+  body:has([data-testid="stSidebar"][aria-expanded="true"]) [data-testid="stAppViewContainer"] {
+    margin-left:300px !important;
+    width:calc(100% - 300px) !important;
+  }
+}
+@media (min-width:721px) and (max-width:900px) {
+  body:has([data-testid="stSidebar"][aria-expanded="true"]) [data-testid="stAppViewContainer"] {
+    margin-left:250px !important;
+    width:calc(100% - 250px) !important;
+  }
 }
 [data-testid="stSidebar"] > div:first-child { height:100vh !important; overflow:hidden !important; }
 [data-testid="stSidebarContent"] { height:100vh !important; overflow-y:auto !important; overflow-x:hidden !important; scrollbar-width:thin !important; }
