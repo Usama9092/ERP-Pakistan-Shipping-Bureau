@@ -5,6 +5,9 @@ The page is deliberately role-native and view-gated so a rerun renders only one 
 
 from __future__ import annotations
 
+# Bootstrap the application root so direct Streamlit launches work regardless
+# of the caller's current working directory (e.g. GitHub Codespaces).
+# This must run before importing the local ``config`` package.
 import sys
 from pathlib import Path
 _APP_ROOT = Path(__file__).resolve().parent
@@ -23,7 +26,9 @@ from components.professional_center_v36 import render as render_professional_cen
 from components.role_cockpits_v40 import render as render_role_cockpit
 from components.project_workspace_v40 import render as render_project_workspace, render_project_launcher
 from components.survey_lifecycle_v36 import render as render_survey_lifecycle_v36, render_role_acceptance as render_v36_acceptance
-render_v33_acceptance = render_v36_acceptance
+render_v33_acceptance = render_v36_acceptance  # archived compatibility alias
+
+
 
 st.set_page_config(page_title=f"{cfg.APP_NAME} · v4.1.4", page_icon="🚢", layout="wide", initial_sidebar_state="expanded")
 inject_css()
@@ -35,12 +40,12 @@ if not user:
 role = user.get('role')
 
 NAV = {
-    'gm': [('Command Center', 'cockpit'), ('Projects', 'projects'), ('Project & Plan', 'operations'), ('Survey Control', 'survey'), ('Governance & Acceptance', 'governance')],
+    'gm': [('Command Center', 'cockpit'), ('Projects', 'projects')],
     'dm': [('Operations Center', 'cockpit'), ('Projects', 'projects'), ('Plan / Allocation', 'operations'), ('Survey Control', 'survey'), ('Acceptance', 'governance')],
     'engineer': [('Technical Cockpit', 'cockpit'), ('Projects', 'projects'), ('Plan Appraisal', 'operations')],
     'surveyor': [('Field Cockpit', 'cockpit'), ('Projects', 'projects'), ('Survey Lifecycle', 'survey')],
     'designer': [('Submission Cockpit', 'cockpit'), ('Projects', 'projects'), ('Plan Appraisal', 'operations')],
-    'ship_management': [('Operations Cockpit', 'cockpit'), ('Projects', 'projects'), ('Corrective / Survey', 'operations'), ('Survey Lifecycle', 'survey')],
+    'ship_management': [('Operations Cockpit', 'cockpit'), ('Projects', 'projects'), ('Corrective / Survey', 'operations') , ('Survey Lifecycle', 'survey')],
     'owner': [('Fleet Cockpit', 'cockpit'), ('Projects', 'projects'), ('In-Service', 'operations'), ('Survey Lifecycle', 'survey')],
     'shipyard': [('NSC Cockpit', 'cockpit'), ('Projects', 'projects'), ('NSC Operations', 'operations'), ('Survey Lifecycle', 'survey')],
 }
@@ -54,11 +59,18 @@ state_key = f"epas_view_{role}_v414"
 labels = [x[0] for x in options]
 view_titles = {label: key for label, key in options}
 
+# Fixed global navigation before project selection.
 project_id = st.session_state.get("selected_project_id")
 if not project_id:
     with st.sidebar:
         st.markdown('<div class="psb-global-nav-label">GLOBAL NAVIGATION</div>', unsafe_allow_html=True)
-        selected_label = st.radio("WORKSPACE", labels, index=0, key=state_key, label_visibility="collapsed")
+        selected_label = st.radio(
+            "WORKSPACE",
+            labels,
+            index=0,
+            key=state_key,
+            label_visibility="collapsed",
+        )
         view = view_titles[selected_label]
         st.markdown('<div class="psb-sidebar-divider"></div>', unsafe_allow_html=True)
         if st.button("Sign out", key="global_signout_v413", use_container_width=True):
@@ -68,9 +80,13 @@ if not project_id:
 else:
     view = "project_context"
 
+# PSB application shell: authenticated identity, current workspace and secure status.
 render_topbar(user, "Project Workspace" if project_id else selected_label)
 
 if project_id:
+    # Once a project is opened, it becomes the primary context. The role-specific
+    # project navigation sits on the left and all project operations remain in the
+    # selected project boundary.
     render_project_workspace(role, project_id)
     st.stop()
 
@@ -99,3 +115,4 @@ elif view == 'survey':
 elif view == 'governance':
     render_professional_center(include_security=True)
     render_v36_acceptance()
+
