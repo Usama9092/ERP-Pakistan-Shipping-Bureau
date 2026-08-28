@@ -15,7 +15,7 @@ from database import production_queries as pq
 from utils import helpers as h
 
 from components import certificates, reports, rfi_queue
-from components import plan_appraisal
+from components import plan_appraisal_v414 as plan_appraisal
 
 # Project navigation is intentionally project-specific and phase-aware.
 # Once a project is opened, the left sidebar becomes the primary navigation for
