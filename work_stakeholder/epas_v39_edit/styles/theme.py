@@ -748,7 +748,47 @@ EPAS_V36_CSS = r"""
 
 
 EPAS_V413_SIDEBAR_CSS = r"""
-/* EPAS v4.1.3 — fixed static navigation */
+/* EPAS v4.1.4 — custom fixed navigation rail (no Streamlit sidebar). */
+[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] { display:none !important; }
+
+.st-key-psb_fixed_nav {
+  position:fixed !important; left:0 !important; top:0 !important; bottom:0 !important;
+  width:300px !important; height:100vh !important; box-sizing:border-box !important;
+  padding:34px 24px 24px !important; overflow-y:auto !important; overflow-x:hidden !important;
+  z-index:1000 !important; background:linear-gradient(180deg,var(--psb-shell-2),var(--psb-shell)) !important;
+  border-right:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:8px 0 28px rgba(2,29,42,.10) !important;
+  scrollbar-width:thin !important;
+}
+.st-key-psb_fixed_nav * { color:#E8F2F5; }
+.st-key-psb_fixed_nav .psb-fixed-nav-title { color:#F6FBFD; font-size:14px; font-weight:800; margin:24px 4px 14px; }
+.st-key-psb_fixed_nav [data-testid="stRadio"] > div { display:flex !important; flex-direction:column !important; gap:6px !important; }
+.st-key-psb_fixed_nav [data-testid="stRadio"] label {
+  width:100% !important; min-height:44px !important; box-sizing:border-box !important;
+  display:flex !important; align-items:center !important; gap:9px !important;
+  padding:9px 11px !important; border:1px solid transparent !important;
+  border-radius:11px !important; color:#D7E7EC !important; font-weight:750 !important;
+}
+.st-key-psb_fixed_nav [data-testid="stRadio"] label:hover { background:rgba(255,255,255,.06) !important; }
+.st-key-psb_fixed_nav [data-testid="stRadio"] label:has(input:checked) {
+  background:linear-gradient(90deg,rgba(18,137,118,.38),rgba(18,137,118,.15)) !important;
+  border-left:3px solid #2FB590 !important; color:#FFFFFF !important;
+}
+.st-key-psb_fixed_nav [data-testid="stRadio"] label p { margin:0 !important; color:inherit !important; }
+.st-key-psb_fixed_nav .stButton > button {
+  width:100% !important; min-height:44px !important; color:#E7F2F5 !important;
+  background:rgba(255,255,255,.045) !important; border:1px solid rgba(255,255,255,.12) !important;
+  border-radius:10px !important; font-weight:750 !important;
+}
+.st-key-psb_fixed_nav .stButton > button:hover { background:rgba(255,255,255,.09) !important; }
+@media (min-width:721px) and (max-width:900px) { .st-key-psb_fixed_nav { width:250px !important; padding:28px 18px 20px !important; } }
+@media (max-width:720px) {
+  .st-key-psb_fixed_nav { position:relative !important; width:100% !important; height:auto !important; padding:18px !important; }
+}
+
+/* Archived sidebar compatibility rules below; the active application does not render st.sidebar. */
 [data-testid="stSidebar"] {
   position: fixed !important; left:0 !important; top:0 !important; bottom:0 !important; height:100vh !important;
   overflow:hidden !important; z-index:100 !important;
@@ -797,5 +837,6 @@ EPAS_V413_SIDEBAR_CSS = r"""
 [data-testid="stSidebar"] [data-testid="stRadio"] label { width:100% !important; min-height:36px !important; box-sizing:border-box !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
 [data-testid="stSidebar"] .stButton > button { width:100% !important; min-height:38px !important; white-space:nowrap !important; }
 @media (max-width:900px) { [data-testid="stSidebar"] { width:250px !important; } }
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] { display:none !important; }
 """
 
