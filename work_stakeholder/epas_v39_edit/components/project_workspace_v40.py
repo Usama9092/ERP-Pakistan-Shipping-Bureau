@@ -273,7 +273,9 @@ def _render_section(role, section, project, vessel, health):
     elif section == "ship_register":
         _ship_register(pid, vessel)
     elif section == "certification":
-        certificates.render_for_project(pid)
+        # Owners may review and download issued certificates, but certificate
+        # generation is an internal classification-authority action.
+        certificates.render_for_project(pid, allow_generate=role != "owner")
     elif section == "milestones":
         _milestones(pid)
     elif section == "observations":
@@ -635,3 +637,4 @@ def _project_task_snapshot(pid, title):
     for r in rows[:100]:
         st.write(f"**{str(r.get('task_type','Task')).replace('_',' ').title()}**")
         st.caption(r.get('note') or '—')
+
