@@ -618,6 +618,14 @@ def project_document_signed_url(document_id: str, expires_in: int = 600) -> str:
     return signed.get("signedURL") or signed.get("signedUrl") or signed.get("url")
 
 
+def project_storage_signed_url(storage_path: str, expires_in: int = 600) -> str:
+    """Issue a short-lived URL for an RLS-authorised project document path."""
+    if not storage_path:
+        raise ValueError("Document storage path is not available")
+    signed = _db().storage.from_("project-documents").create_signed_url(storage_path, expires_in)
+    return signed.get("signedURL") or signed.get("signedUrl") or signed.get("url")
+
+
 
 def certificate_pdf_signed_url(certificate_id: str, expires_in: int = 600) -> str:
     path = _rpc("epas_certificate_pdf_path", {"p_certificate_id": certificate_id})
