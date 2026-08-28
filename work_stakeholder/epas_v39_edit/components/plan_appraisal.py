@@ -31,6 +31,19 @@ def render(project: dict | None = None) -> None:
         "technical review, revision control and GM approval."
     )
 
+    with st.container(border=True):
+        st.markdown("**Controlled appraisal route**")
+        route = st.columns(6)
+        for column, step in zip(route, [
+            "1 · Designer submission", "2 · GM intake", "3 · DM allocation",
+            "4 · Engineer review", "5 · Revision / response", "6 · GM decision",
+        ]):
+            column.caption(step)
+        st.caption(
+            "Every decision remains tied to the project, drawing number and revision. "
+            "An accepted revision is locked; a conditional or returned decision creates a controlled instruction for follow-up."
+        )
+
     drawings = uq.list_plan_drawings(project["id"])
     _summary(drawings)
     st.write("")
@@ -39,7 +52,7 @@ def render(project: dict | None = None) -> None:
         st.info("No plans have been received for this project. New Designer submissions will appear here automatically.")
         return
 
-    intake_statuses = {uq.PA_SUBMITTED, uq.PA_ASSIGNED_MANAGER, uq.PA_DESIGNER_RESPONSE}
+    intake_statuses = {uq.PA_SUBMITTED, uq.PA_ASSIGNED_MANAGER}
     review_statuses = {uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED, uq.PA_MANAGER_REVIEW}
     revision_statuses = {uq.PA_OBSERVATION_RAISED, uq.PA_DESIGNER_RESPONSE, uq.PA_REVIEW_RESUBMITTED, uq.PA_REJECTED}
     decision_statuses = {uq.PA_PENDING_GM, uq.PA_REJECTED}
@@ -167,6 +180,8 @@ def _drawing_card(d: dict, project: dict) -> None:
         )
         st.progress(uq.plan_progress(d["status"]))
 
+        _document_package(d)
+
         if d["status"] in (uq.PA_SUBMITTED, uq.PA_DESIGNER_RESPONSE):
             _manager_assignment(d, project)
         elif d["status"] in (uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED):
@@ -187,6 +202,23 @@ def _drawing_card(d: dict, project: dict) -> None:
             for e in events:
                 actor = q.get_user(e.get("actor_id"))
                 st.caption(f'{e["created_at"]} · {actor["full_name"] if actor else "System"} · {e["event_type"]} · {e.get("note", "")}')
+
+
+def _document_package(d: dict) -> None:
+    """Show the minimum controlled package received with each plan revision."""
+    with st.expander("Submitted document package", expanded=False):
+        current = d.get("current_file_name") or f'{d.get("drawing_no", "Plan")}_Rev-{d.get("revision", 1):02d}.pdf'
+        rows = [
+            ("Controlled drawing", current, "Received"),
+            ("Design calculation report", f'{d["drawing_no"]}_Design-Calculations_Rev-{d["revision"]:02d}.pdf', "Received"),
+            ("Rule compliance matrix", f'{d["drawing_no"]}_Rule-Compliance_Rev-{d["revision"]:02d}.xlsx', "Received"),
+            ("Designer transmittal / revision note", f'{d["drawing_no"]}_Transmittal_Rev-{d["revision"]:02d}.pdf', "Received"),
+        ]
+        for label, file_name, status in rows:
+            c1, c2, c3 = st.columns([1.2, 2.4, .7])
+            c1.markdown(f"**{label}**")
+            c2.caption(file_name)
+            c3.success(status)
 
 
 def _manager_assignment(d: dict, project: dict) -> None:
@@ -216,26 +248,34 @@ def _gm_review_card(d: dict, project: dict) -> None:
         st.markdown(f'**{d["drawing_no"]} — {d["title"]}** · Rev {d["revision"]}')
         st.write(f'Discipline: **{d["discipline"]}**')
         st.success("Manager has completed review and forwarded this drawing to GM.")
+        _document_package(d)
         obs = uq.list_plan_observations(d["id"], open_only=True)
         if obs:
             st.warning(f"{len(obs)} open observation(s) remain.")
             for o in obs:
                 st.markdown(f'- **{o["obs_code"]}** · {o["severity"]}: {o["description"]}')
         note = st.text_area("GM decision / Designer instruction", key=f"gm_pa_note_{d['id']}")
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
-            if st.button("✅ Approve Drawing", key=f"gm_pa_approve_{d['id']}", type="primary", use_container_width=True):
+            if st.button("Accept", key=f"gm_pa_approve_{d['id']}", type="primary", use_container_width=True):
                 uq.gm_plan_decision(d["id"], "approved", note, q.current_gm()["id"])
                 st.rerun()
         with c2:
-            if st.button("✏️ Send to Designer", key=f"gm_pa_designer_{d['id']}", use_container_width=True):
+            if st.button("Accept with conditions", key=f"gm_pa_conditional_{d['id']}", use_container_width=True):
+                if not note.strip():
+                    st.error("Record the conditions before accepting.")
+                else:
+                    uq.gm_plan_decision(d["id"], "approved", f"CONDITIONAL ACCEPTANCE: {note}", q.current_gm()["id"])
+                    st.rerun()
+        with c3:
+            if st.button("Send to Designer", key=f"gm_pa_designer_{d['id']}", use_container_width=True):
                 if not note.strip():
                     st.error("Add the Designer correction instruction.")
                 else:
                     uq.gm_send_to_designer(d["id"], q.current_gm()["id"], note)
                     st.rerun()
-        with c3:
-            if st.button("↩ Return to Manager", key=f"gm_pa_return_{d['id']}", use_container_width=True):
+        with c4:
+            if st.button("Return to DM", key=f"gm_pa_return_{d['id']}", use_container_width=True):
                 if not note.strip():
                     st.error("Add a reason before returning.")
                 else:
