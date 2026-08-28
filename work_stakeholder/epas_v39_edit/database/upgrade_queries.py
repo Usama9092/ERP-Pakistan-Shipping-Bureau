@@ -124,13 +124,101 @@ def _seed_if_empty(db: dict) -> None:
             db["plan_events"].append({"id": _uid(), "drawing_id": db["plan_drawings"][-1]["id"], "event_type": "SUBMITTED", "actor_id": designer["id"] if designer else None, "note": "Initial drawing submission", "created_at": date.today() - timedelta(days=2)})
 
 
+def _seed_project_plan_package(db: dict, project_id: str) -> None:
+    """Create a project-scoped demonstration of the full appraisal lifecycle."""
+    if any(d.get("project_id") == project_id for d in db["plan_drawings"]):
+        return
+
+    designer = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_DESIGNER), None)
+    manager = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_DM), None)
+    engineer = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_ENGINEER), None)
+    gm = next((u for u in db["profiles"] if u["role"] == cfg.ROLE_GM), None)
+    actors = {
+        "designer": designer["id"] if designer else None,
+        "manager": manager["id"] if manager else None,
+        "engineer": engineer["id"] if engineer else None,
+        "gm": gm["id"] if gm else None,
+    }
+    samples = [
+        ("GA-101", "General Arrangement", "Hull & Structure", 1, PA_SUBMITTED,
+         "GA-101_Rev-01_General-Arrangement.pdf"),
+        ("ST-204", "Midship Section & Scantlings", "Hull & Structure", 2, PA_ASSIGNED_ENGINEER,
+         "ST-204_Rev-02_Midship-Section.pdf"),
+        ("FP-310", "Fire Control & Safety Plan", "Stability", 3, PA_DESIGNER_RESPONSE,
+         "FP-310_Rev-03_Fire-Control-Plan.pdf"),
+        ("EL-118", "Emergency Power Distribution", "Stability", 2, PA_PENDING_GM,
+         "EL-118_Rev-02_Emergency-Power.pdf"),
+        ("LS-401", "Life-Saving Appliances Plan", "Hull & Structure", 2, PA_APPROVED,
+         "LS-401_Rev-02_LSA-Plan.pdf"),
+    ]
+
+    for index, (number, title, discipline, revision, status, file_name) in enumerate(samples):
+        document_id = _uid()
+        drawing_id = _uid()
+        uploaded_at = date.today() - timedelta(days=12 - index * 2)
+        db["documents"].append({
+            "id": document_id, "project_id": project_id,
+            "category": cfg.DOC_CATEGORY_DRAWING, "file_name": file_name,
+            "version": revision, "status": "approved" if status == PA_APPROVED else "pending_review",
+            "uploaded_by": actors["designer"], "uploaded_at": uploaded_at,
+        })
+        db["plan_drawings"].append({
+            "id": drawing_id, "project_id": project_id, "document_id": document_id,
+            "drawing_no": number, "title": title, "discipline": discipline,
+            "revision": revision, "status": status,
+            "manager_id": actors["manager"] if status != PA_SUBMITTED else None,
+            "engineer_id": actors["engineer"] if status not in (PA_SUBMITTED,) else None,
+            "designer_id": actors["designer"], "submitted_at": uploaded_at,
+            "updated_at": date.today() - timedelta(days=max(0, 4 - index)),
+            "current_file_name": file_name,
+        })
+        for rev in range(1, revision + 1):
+            rev_name = file_name.replace(f"Rev-{revision:02d}", f"Rev-{rev:02d}")
+            db["document_revisions"].append({
+                "id": _uid(), "document_id": document_id, "revision": rev,
+                "file_name": rev_name,
+                "status": "superseded" if rev < revision else ("approved" if status == PA_APPROVED else "current review"),
+                "storage_path": f"demo/{project_id}/plan-appraisal/{number}/rev-{rev}/{rev_name}",
+                "created_by": actors["designer"],
+                "created_at": uploaded_at + timedelta(days=(rev - 1) * 3),
+            })
+        db["plan_events"].append({
+            "id": _uid(), "drawing_id": drawing_id, "event_type": "DESIGNER_SUBMITTED",
+            "actor_id": actors["designer"], "note": f"Revision 1 submitted with controlled PDF and design calculations.",
+            "created_at": uploaded_at,
+        })
+        if status != PA_SUBMITTED:
+            db["plan_events"].extend([
+                {"id": _uid(), "drawing_id": drawing_id, "event_type": "DM_ASSIGNED_ENGINEER", "actor_id": actors["manager"], "note": f"Assigned for {discipline} appraisal.", "created_at": uploaded_at + timedelta(days=1)},
+                {"id": _uid(), "drawing_id": drawing_id, "event_type": "ENGINEER_TECHNICAL_REVIEW", "actor_id": actors["engineer"], "note": "Rule compliance, calculations and drawing package reviewed.", "created_at": uploaded_at + timedelta(days=2)},
+            ])
+
+        if number == "FP-310":
+            db["plan_observations"].append({
+                "id": _uid(), "drawing_id": drawing_id, "obs_code": "PA-OBS-014",
+                "description": "Revise fire damper arrangement and identify remote closing stations in accordance with the applicable rule reference.",
+                "severity": "Major", "status": "open", "raised_at": uploaded_at + timedelta(days=2),
+                "designer_response": "Revision 3 adds remote closing stations and the updated fire damper schedule.",
+                "response": "Revision 3 uploaded with corrected arrangement.",
+                "responded_at": uploaded_at + timedelta(days=6),
+            })
+            db["plan_events"].append({"id": _uid(), "drawing_id": drawing_id, "event_type": "RETURNED_TO_DESIGNER", "actor_id": actors["manager"], "note": "Major observation issued; corrected revision required.", "created_at": uploaded_at + timedelta(days=3)})
+            db["plan_events"].append({"id": _uid(), "drawing_id": drawing_id, "event_type": "DESIGNER_REVISION_RECEIVED", "actor_id": actors["designer"], "note": "Revision 3 and response sheet returned for re-appraisal.", "created_at": uploaded_at + timedelta(days=6)})
+        elif status == PA_PENDING_GM:
+            db["plan_events"].append({"id": _uid(), "drawing_id": drawing_id, "event_type": "DM_RECOMMENDED_ACCEPTANCE", "actor_id": actors["manager"], "note": "Technical review complete; submitted to GM for final decision.", "created_at": uploaded_at + timedelta(days=4)})
+        elif status == PA_APPROVED:
+            db["plan_events"].append({"id": _uid(), "drawing_id": drawing_id, "event_type": "GM_APPROVED", "actor_id": actors["gm"], "note": "Accepted for construction subject to survey verification and approved revision control.", "created_at": uploaded_at + timedelta(days=5)})
+
+
 def _live_table(name: str):
     return get_client().table(name)
 
 
 def list_plan_drawings(project_id: str) -> list[dict]:
     if is_demo_mode():
-        return [d for d in _store()["plan_drawings"] if d["project_id"] == project_id]
+        db = _store()
+        _seed_project_plan_package(db, project_id)
+        return [d for d in db["plan_drawings"] if d["project_id"] == project_id]
     return _live_table("plan_drawings").select("*").eq("project_id", project_id).order("updated_at", desc=True).execute().data
 
 def list_approved_plan_drawings(project_id: str) -> list[dict]:
