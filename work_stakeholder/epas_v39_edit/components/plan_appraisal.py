@@ -501,7 +501,7 @@ def _manager_assignment(d: dict, project: dict) -> None:
     # Use the production query's canonical API directly.  The older
     # ``list_users`` compatibility name is not available on every deployed
     # Streamlit worker during rolling upgrades.
-    dms = q.users(role=cfg.ROLE_DM)
+    dms = uq.project_manager_candidates(project["id"])
     eligible = [u for u in dms if uq.is_project_manager_eligible(project["id"], u["id"])]
     if not eligible:
         st.error("No eligible Plan Appraisal Manager is available for this project.")
