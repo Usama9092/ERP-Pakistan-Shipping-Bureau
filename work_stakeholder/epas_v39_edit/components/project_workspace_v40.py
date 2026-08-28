@@ -254,11 +254,12 @@ def render(role: str, project_id: str | None, nav_host=None):
         if st.button("Change Project", key=f"change_project_v413_{project_id}", use_container_width=True):
             clear_project()
             st.rerun()
-        if st.button("Sign out", key=f"project_signout_v413_{project_id}", use_container_width=True):
-            from config.production_auth import sign_out
-            sign_out()
-            clear_project()
-            st.rerun()
+        with st.container(key="psb_nav_signout"):
+            if st.button("Sign out", key=f"project_signout_v413_{project_id}", use_container_width=True):
+                from config.production_auth import sign_out
+                sign_out()
+                clear_project()
+                st.rerun()
 
 
     st.markdown(
