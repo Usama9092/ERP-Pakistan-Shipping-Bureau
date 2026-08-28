@@ -765,7 +765,11 @@ EPAS_V413_SIDEBAR_CSS = r"""
   }
   [data-testid="stSidebarCollapseButton"],
   [data-testid="stSidebarCollapsedControl"],
-  [data-testid="collapsedControl"] {
+  [data-testid="collapsedControl"],
+  [data-testid="stSidebar"] [data-testid="stBaseButton-headerNoPadding"],
+  [data-testid="stSidebar"] button[kind="headerNoPadding"],
+  [data-testid="stSidebar"] button[aria-label*="Collapse" i],
+  [data-testid="stSidebar"] button[aria-label*="Close sidebar" i] {
     display:none !important; visibility:hidden !important; pointer-events:none !important;
   }
 }
