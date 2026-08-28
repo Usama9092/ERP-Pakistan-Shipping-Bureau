@@ -27,6 +27,7 @@ PROJECT_NAV = [
     ("In-Service Survey", "in_service", "Recurring In-Service survey cycles"),
     ("Survey Status", "survey_status", "Review-only live survey status for this project"),
     ("Risk Register", "risk_register", "Project risks and management decisions"),
+    ("Governance & Acceptance", "governance", "Project governance, controlled releases, acceptance and closure"),
     ("Ship Register", "ship_register", "Review-only vessel/class/survey status for this project"),
     ("Certification", "certification", "Certificate lifecycle and issued certificates"),
     ("Documents", "documents", "Controlled project documents and releases"),
@@ -198,6 +199,8 @@ def render(role: str, project_id: str | None):
     # and Audit are always available within the project context.
     nav = []
     for label, value, desc in PROJECT_NAV:
+        if value == "governance" and role not in {"gm", "dm"}:
+            continue
         if role in {"designer", "engineer"} and value in {"nsc_survey", "survey_status"}:
             continue
         if value == "plan_appraisal" and "plan_appraisal" not in phases:
@@ -266,9 +269,24 @@ def _render_section(role, section, project, vessel, health):
             else:
                 _project_task_snapshot(pid, "Plan Appraisal")
     elif section == "nsc_survey":
-        _survey(role, pid, phase_filter="nsc_survey")
+        workflow_tab, control_tab = st.tabs(["RFI Workflow", "Schedule & Control"])
+        with workflow_tab:
+            _survey(role, pid, phase_filter="nsc_survey")
+        with control_tab:
+            from components.professional_center_v36 import render_survey_control
+            render_survey_control(pid)
     elif section == "in_service":
-        _survey(role, pid, phase_filter="in_service")
+        workflow_tab, lifecycle_tab, control_tab = st.tabs([
+            "RFI Workflow", "Recurring Lifecycle", "Schedule & Control"
+        ])
+        with workflow_tab:
+            _survey(role, pid, phase_filter="in_service")
+        with lifecycle_tab:
+            from components.survey_lifecycle_v36 import render as render_survey_lifecycle
+            render_survey_lifecycle(pid)
+        with control_tab:
+            from components.professional_center_v36 import render_survey_control
+            render_survey_control(pid)
     elif section == "survey_status":
         _survey_status(role, pid, project, vessel, health)
     elif section == "risk_register":
@@ -286,8 +304,14 @@ def _render_section(role, section, project, vessel, health):
     elif section == "documents" or section == "approved":
         _documents(role, pid, approved_only=(section == "approved"))
     elif section == "governance":
-        from components.professional_center_v36 import render_governance
-        render_governance(pid)
+        if role == "gm":
+            from components.governance_v15 import render_gm
+            render_gm(pid)
+        else:
+            from components.professional_center_v36 import render_governance
+            from components.survey_lifecycle_v36 import render_role_acceptance
+            render_governance(pid)
+            render_role_acceptance()
     elif section == "audit":
         _audit(pid)
     elif section == "work":
