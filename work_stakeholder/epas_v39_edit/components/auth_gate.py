@@ -26,7 +26,7 @@ def render() -> dict | None:
         render_login_hero()
 
     with right:
-        st.markdown('<div class="psb-login-panel">', unsafe_allow_html=True)
+        st.markdown('<span class="psb-login-panel-marker" aria-hidden="true"></span>', unsafe_allow_html=True)
         st.markdown('<div class="psb-login-panel__title">Welcome back</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="psb-login-panel__copy">'
@@ -47,19 +47,12 @@ def render() -> dict | None:
                 st.rerun()
             st.error(message)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.caption("🔒 Secure access")
-        with col2:
-            st.caption("✓ Audit enabled")
-
         if is_demo_mode():
-            with st.expander("📋 Demo Access Mode", expanded=False):
-                st.markdown("**Demo Credentials:**")
-                st.code("Email: gm@classification.com\nPassword: PSB-Demo-2026!", language="text")
-                st.caption("💡 Use any published demo email from DEMO_CREDENTIALS.md with the same password.")
+            with st.expander("Show demo access details", expanded=False):
+                st.code("gm@classification.com\nPSB-Demo-2026!", language="text")
+                st.caption("Use the GM credentials above first to verify the demo. Other published role accounts use the same demo password.")
 
-        with st.expander("❓ Need help? Forgot password?", expanded=False):
+        with st.expander("Forgot password?", expanded=False):
             reset_email = st.text_input("Account email", key="reset_email", placeholder="your.email@psb.gov.pk")
             if st.button("Request password reset", key="reset_password", use_container_width=True):
                 if not reset_email.strip():
@@ -67,14 +60,6 @@ def render() -> dict | None:
                 else:
                     ok, msg = request_password_reset(reset_email)
                     (st.success if ok else st.error)(msg)
-
-        st.divider()
-        st.markdown(
-            '<div class="psb-login-help">Access is restricted to authorized PSB users and registered external stakeholders. '
-            'Contact the system administrator if your account or role is incorrect.</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(
         '<div class="psb-login-bottom">Pakistan Shipping Bureau · Classification, Survey & Maritime Safety Management System</div>',
