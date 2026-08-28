@@ -203,7 +203,10 @@ def render(role: str, project_id: str | None):
             continue
         if role in {"designer", "engineer"} and value in {"nsc_survey", "survey_status"}:
             continue
-        if value == "plan_appraisal" and "plan_appraisal" not in phases:
+        direct_in_service_plan = (
+            "in_service" in phases and role in {"gm", "owner", "ship_management"}
+        )
+        if value == "plan_appraisal" and "plan_appraisal" not in phases and not direct_in_service_plan:
             continue
         if value == "nsc_survey" and "nsc_survey" not in phases:
             continue
@@ -261,6 +264,10 @@ def _render_section(role, section, project, vessel, health):
     elif section == "plan_appraisal":
         if role == "gm":
             plan_appraisal.render(project)
+        elif role in {"owner", "ship_management"} and "in_service" in {
+            str(x).lower() for x in (project.get("phases") or [])
+        }:
+            _in_service_plan_submission(role, project)
         else:
             # Use the role-specific work queue when the role module has one.
             from components.role_workspaces import render_engineer
@@ -333,6 +340,65 @@ def _render_section(role, section, project, vessel, health):
         _survey(role, pid, followup_only=True)
     elif section == "approved":
         _documents(role, pid, approved_only=True)
+
+
+def _in_service_plan_submission(role: str, project: dict) -> None:
+    """Project-scoped alteration/repair plan intake for authorized stakeholders."""
+    pid = project["id"]
+    st.markdown("### In-Service Plan Appraisal")
+    st.caption(
+        "Submit alteration, repair or modification drawings for this vessel. "
+        "The plan is routed to GM intake and remains linked to this project through every revision."
+    )
+
+    with st.expander("Submit a plan to GM Intake", expanded=True):
+        c1, c2 = st.columns(2)
+        drawing_no = c1.text_input("Drawing number", key=f"is_plan_no_{role}_{pid}")
+        title = c2.text_input("Drawing title", key=f"is_plan_title_{role}_{pid}")
+        discipline = st.selectbox(
+            "Discipline",
+            ["Hull & Structure", "Machinery", "Electrical", "Stability", "Safety Equipment", "Fire & LSA"],
+            key=f"is_plan_discipline_{role}_{pid}",
+        )
+        drawing_file = st.file_uploader(
+            "Controlled drawing PDF",
+            type=["pdf"],
+            key=f"is_plan_file_{role}_{pid}",
+        )
+        note = st.text_area(
+            "Submission purpose / modification scope",
+            key=f"is_plan_note_{role}_{pid}",
+        )
+        if st.button(
+            "Submit plan to GM →",
+            type="primary",
+            key=f"is_plan_submit_{role}_{pid}",
+        ):
+            if not drawing_no.strip() or not title.strip() or not drawing_file or not note.strip():
+                st.error("Drawing number, title, PDF and modification scope are required.")
+            elif _safe(
+                lambda: pq.designer_submit_initial_drawing(
+                    pid, drawing_no, title, discipline, drawing_file, note
+                ),
+                "Plan submission",
+            ):
+                st.success("Plan submitted and received in this project's GM Plan Appraisal intake.")
+                st.rerun()
+
+    drawings = _safe(lambda: pq.plan_drawings(pid), "Submitted plans") or []
+    st.markdown("#### Plans submitted for this project")
+    if not drawings:
+        st.info("No in-service plans have been submitted yet.")
+    for drawing in drawings:
+        with st.container(border=True):
+            revision = drawing.get("current_revision", drawing.get("revision", 1))
+            st.markdown(
+                f"**{drawing.get('drawing_no', 'Plan')} — {drawing.get('title', 'Untitled')}** · Rev {revision}"
+            )
+            st.caption(
+                f"{str(drawing.get('discipline') or '—')} · "
+                f"{str(drawing.get('status') or 'submitted').replace('_', ' ').title()}"
+            )
 
 def _overview(role, project, vessel, health):
     """Project landing page matching the PSB reference: no workflow snapshot and no recent activity."""
