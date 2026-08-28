@@ -158,6 +158,30 @@ def _demo_read(name, *args, **kwargs):
     return []
 
 def _demo_write(name, *args, **kwargs):
+    if name == "stakeholder_create_rfi":
+        project_id, vessel_id, phase, survey_type, requested_date, priority, scope_note = args
+        rows = _db()["rfis"]
+        sequence = len(rows) + 1
+        new = {
+            "id": f"demo-rfi-request-{sequence:03d}",
+            "rfi_code": f"RFI-DEMO-{sequence:03d}",
+            "project_id": project_id,
+            "vessel_id": vessel_id,
+            "phase": phase,
+            "survey_type": survey_type,
+            "status": "pending_allocation",
+            "requested_date": requested_date,
+            "scheduled_date": None,
+            "requested_by": _uid(),
+            "assigned_dm_id": None,
+            "assigned_surveyor_id": None,
+            "priority": priority,
+            "scope_note": scope_note,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+        }
+        rows.append(new)
+        return new
     if name == "create_project":
         payload = kwargs.get("payload") or (args[0] if args else {})
         new = {"id": f"demo-{len(_db()['projects'])+1}", "project_code": payload.get("project_code", f"DEMO-{len(_db()['projects'])+1:03d}"), "name": payload.get("name","Demo Project"), "vessel_type": payload.get("vessel_type","Vessel"), "flag_state": payload.get("flag_state","Pakistan"), "phases": payload.get("phases", ["plan_appraisal","nsc_survey","in_service"]), "status":"active", "created_at":datetime.now().isoformat()}
@@ -191,3 +215,4 @@ def dispatch(name, *args, **kwargs):
     if name in {"create_project","stakeholder_create_rfi","dm_assign_engineer_v36","dm_assign_surveyor_v36","gm_decide_rfi","gm_handover_rfi","gm_plan_decision","gm_amended_design_decision","dm_review_plan","dm_forward_survey","dm_verify_corrective","dm_issue_corrective","assignee_submit_corrective_v36","designer_submit_initial_drawing","designer_submit_revision","engineer_submit_review_v36","engineer_register_appraisal_artifact","surveyor_verify_plan_appraisal","start_survey_execution_v36","submit_survey_report_v36","set_in_service_schedule_basis_v36","secure_accept_task","secure_start_task","secure_complete_task","complete_milestone","release_milestone","release_document","withdraw_document_release","close_project","issue_certificate","finalize_interim_certificate","create_scheduled_in_service_rfi","mark_all_notifications_read","mark_notification_read","refresh_task_sla","upload_certificate_pdf_v36","register_project_document","project_document_signed_url","certificate_pdf_signed_url","gm_add_risk","gm_record_decision","gm_escalation_decide_v36","dm_escalate","complete_survey_checklist_item","acknowledge_survey_scope","acknowledge_survey_drawing_package_v36","confirm_survey_execution_declaration","surveyor_accept_assignment_v36"}:
         return _demo_write(name,*args,**kwargs)
     return _demo_read(name,*args,**kwargs)
+
