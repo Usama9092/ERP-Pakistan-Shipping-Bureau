@@ -1024,6 +1024,7 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
   background:linear-gradient(90deg,#EDF7F6,#F8FBFC);
   color:#083D4B; font-size:11px; font-weight:900; letter-spacing:.85px;
 }
+.pa-particular-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
 .pa-particular {
   display:grid; grid-template-columns:minmax(108px,.8fr) minmax(0,1.45fr);
   gap:10px; min-height:42px; align-items:center; padding:8px 10px;
@@ -1037,7 +1038,9 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 }
 [data-testid="stDataFrame"] canvas { color-scheme:light !important; }
 @media (max-width:900px) {
+  .pa-particular-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .pa-particular { grid-template-columns:1fr; gap:3px; min-height:58px; }
 }
+@media (max-width:620px) { .pa-particular-grid { grid-template-columns:1fr; } }
 """
 
