@@ -693,7 +693,7 @@ EPAS_V38_PROJECT_NAV_CSS = r"""
 """
 
 def inject_css() -> None:
-    st.markdown(f"<style>{CSS}{EPAS_V30_CSS}{EPAS_V35_CSS}{EPAS_V36_CSS}{PSB_V361_CSS}{PSB_V362_PROJECT_CSS}{EPAS_V37_REFERENCE_CSS}{EPAS_V38_PROJECT_NAV_CSS}{EPAS_V413_SIDEBAR_CSS}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{CSS}{EPAS_V30_CSS}{EPAS_V35_CSS}{EPAS_V36_CSS}{PSB_V361_CSS}{PSB_V362_PROJECT_CSS}{EPAS_V37_REFERENCE_CSS}{EPAS_V38_PROJECT_NAV_CSS}{EPAS_V413_SIDEBAR_CSS}{EPAS_V414_VISUAL_LOCK_CSS}</style>", unsafe_allow_html=True)
 
 
 EPAS_V30_CSS = r"""
@@ -876,6 +876,126 @@ button[aria-label*="sidebar" i][title*="sidebar" i] {
   margin:0 !important;
   padding:0 !important;
   overflow:hidden !important;
+}
+"""
+
+
+EPAS_V414_VISUAL_LOCK_CSS = r"""
+/* EPAS v4.1.4 — final visual and layout lock.
+   The product deliberately stays in its audited light workspace palette even
+   when the browser or operating system requests dark mode. */
+html, body, .stApp, [data-testid="stAppViewContainer"] {
+  color-scheme:light !important;
+  background:#F4F7F8 !important;
+  color:#161F2C !important;
+}
+[data-testid="stMainBlockContainer"] {
+  width:100% !important;
+  max-width:none !important;
+  padding:24px 28px 48px !important;
+  box-sizing:border-box !important;
+}
+
+/* Reserve exactly the same width as the fixed rail.  The original percentage
+   column could become narrower than the 300px rail and let it cover content. */
+[data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) {
+  display:grid !important;
+  grid-template-columns:300px minmax(0,1fr) !important;
+  gap:24px !important;
+  align-items:start !important;
+  width:100% !important;
+}
+[data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) > [data-testid="stColumn"] {
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  flex:none !important;
+}
+[data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) > [data-testid="stColumn"]:first-child {
+  width:300px !important;
+  min-width:300px !important;
+}
+[data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) > [data-testid="stColumn"]:last-child {
+  grid-column:2 !important;
+  overflow:visible !important;
+}
+
+/* Reliable foregrounds for Streamlit-native content and charts.  Purposeful
+   status colours and the dark navigation rail remain governed by their own
+   more-specific component rules. */
+[data-testid="stAppViewContainer"] :where(p, li, label, input, textarea, select),
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"],
+[data-testid="stAppViewContainer"] [data-testid="stMetricLabel"],
+[data-testid="stAppViewContainer"] [data-testid="stMetricValue"] {
+  opacity:1 !important;
+}
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] [data-baseweb="select"] > div {
+  background:#FFFFFF !important;
+  color:#161F2C !important;
+  -webkit-text-fill-color:#161F2C !important;
+}
+[data-testid="stAppViewContainer"] input::placeholder,
+[data-testid="stAppViewContainer"] textarea::placeholder {
+  color:#687487 !important;
+  -webkit-text-fill-color:#687487 !important;
+  opacity:1 !important;
+}
+[data-testid="stAppViewContainer"] svg text {
+  fill:#33404F !important;
+  opacity:1 !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stDataFrame"],
+[data-testid="stAppViewContainer"] [data-testid="stTable"] {
+  background:#FFFFFF !important;
+  color:#161F2C !important;
+}
+.st-key-psb_fixed_nav,
+.st-key-psb_fixed_nav :where(p, label, span, div) {
+  -webkit-text-fill-color:currentColor !important;
+  opacity:1 !important;
+}
+
+@media (max-width:1100px) {
+  [data-testid="stMainBlockContainer"] { padding:18px 18px 40px !important; }
+  [data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) {
+    grid-template-columns:250px minmax(0,1fr) !important;
+    gap:16px !important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) > [data-testid="stColumn"]:first-child {
+    width:250px !important; min-width:250px !important;
+  }
+  .st-key-psb_fixed_nav {
+    position:fixed !important; inset:0 auto 0 0 !important;
+    width:250px !important; min-width:250px !important; max-width:250px !important;
+    height:100vh !important; padding:26px 18px 104px !important;
+  }
+  .st-key-psb_fixed_nav .st-key-psb_nav_signout { position:absolute !important; left:18px !important; right:18px !important; bottom:20px !important; }
+}
+
+@media (max-width:720px) {
+  [data-testid="stMainBlockContainer"] { padding:12px 12px 32px !important; }
+  [data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) {
+    grid-template-columns:220px minmax(520px,1fr) !important;
+    gap:12px !important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.st-key-psb_fixed_nav) > [data-testid="stColumn"]:first-child {
+    width:220px !important; min-width:220px !important;
+  }
+  .st-key-psb_fixed_nav {
+    position:fixed !important; inset:0 auto 0 0 !important;
+    width:220px !important; min-width:220px !important; max-width:220px !important;
+    height:100vh !important; padding:20px 14px 96px !important;
+  }
+  .st-key-psb_fixed_nav .st-key-psb_nav_signout { position:absolute !important; left:14px !important; right:14px !important; bottom:16px !important; }
+}
+
+@media (prefers-color-scheme:dark) {
+  html, body, .stApp, [data-testid="stAppViewContainer"] {
+    background:#F4F7F8 !important;
+    color:#161F2C !important;
+  }
 }
 """
 
