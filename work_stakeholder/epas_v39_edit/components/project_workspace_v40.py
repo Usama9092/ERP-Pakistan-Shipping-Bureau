@@ -416,7 +416,7 @@ def _overview(role, project, vessel, health):
     ship_rows = _safe(lambda: pq.ship_register_project(pid), "Survey status") or []
     ship = ship_rows[0] if ship_rows else (vessel or {})
     certs = _safe(lambda: pq.certificates(pid), "Project certificates") or []
-    milestones = _safe(lambda: pq.project_milestones(pid), "Project milestones") or []
+    milestones = _safe(lambda: pq.milestones(pid), "Project milestones") or []
     priority = _safe(lambda: [r for r in (pq.my_work_queue() or []) if str(r.get("project_id")) == str(pid)], "Priority actions") or []
 
     next_due = health.get("next_survey_due") or ship.get("next_survey_due") or "—"
@@ -726,7 +726,7 @@ def _work(role, pid):
         st.caption(f"Due {r.get('sla_due_at') or r.get('due_at') or '—'} · {r.get('note') or ''}")
 
 def _milestones(pid):
-    rows = _safe(lambda: pq.project_milestones(pid), "Project milestones") or []
+    rows = _safe(lambda: pq.milestones(pid), "Project milestones") or []
     if not rows:
         st.info("No project milestones are available.")
         return
