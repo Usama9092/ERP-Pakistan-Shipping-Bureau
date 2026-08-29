@@ -261,7 +261,7 @@ def _drawing_record_workspace(drawings: list[dict], project: dict, role: str) ->
         st.caption("Each revision remains a separate immutable approval-process record; superseded files are retained for audit.")
 
     with detail_tabs[2]:
-        _document_package(drawing)
+        _document_package(drawing, "opened_record")
         st.markdown("**Controlled revision files**")
         for revision in revision_rows:
             current = " · CURRENT" if int(revision.get("revision") or 0) == int(drawing.get("revision") or 0) else ""
@@ -431,7 +431,7 @@ def _drawing_card(d: dict, project: dict, role: str) -> None:
                 st.success("Approved drawing — current revision is locked.")
 
         with documents_tab:
-            _document_package(d)
+            _document_package(d, f"workflow_{d.get('status', 'record')}")
 
         with revisions_tab:
             for r in uq.list_document_revisions(d["document_id"]):
@@ -489,7 +489,7 @@ def _demo_pdf(title: str, lines: list[str]) -> bytes:
     return bytes(pdf)
 
 
-def _pdf_download(d: dict, label: str, file_name: str, document_type: str) -> None:
+def _pdf_download(d: dict, label: str, file_name: str, document_type: str, key_scope: str) -> None:
     st.download_button(
         label=f"Download {label}",
         data=_demo_pdf(
@@ -504,12 +504,12 @@ def _pdf_download(d: dict, label: str, file_name: str, document_type: str) -> No
         ),
         file_name=file_name,
         mime="application/pdf",
-        key=f"pa_pdf_{document_type}_{d['id']}",
+        key=f"pa_pdf_{key_scope}_{document_type}_{d['id']}",
         use_container_width=True,
     )
 
 
-def _document_package(d: dict) -> None:
+def _document_package(d: dict, key_scope: str = "workflow") -> None:
     """Separate Designer source files from PSB appraisal deliverables."""
     with st.container(border=True):
         st.markdown("**Controlled PDF document package**")
@@ -519,7 +519,7 @@ def _document_package(d: dict) -> None:
         with c1:
             st.caption(f"Design drawing PDF · Rev {d['revision']}")
             if is_demo_mode():
-                _pdf_download(d, "design drawing PDF", current, "Designer Drawing")
+                _pdf_download(d, "design drawing PDF", current, "Designer Drawing", key_scope)
             else:
                 try:
                     st.link_button("Open design drawing PDF", q.project_document_signed_url(d["document_id"]), use_container_width=True)
@@ -529,7 +529,7 @@ def _document_package(d: dict) -> None:
             design_file = f'{d["drawing_no"]}_Design-Calculations_Rev-{d["revision"]:02d}.pdf'
             st.caption(f"Design calculations / design report · Rev {d['revision']}")
             if is_demo_mode():
-                _pdf_download(d, "design report PDF", design_file, "Designer Design Report")
+                _pdf_download(d, "design report PDF", design_file, "Designer Design Report", key_scope)
             else:
                 st.info("Design report is registered with the project document package when supplied.")
         st.caption(
@@ -552,7 +552,7 @@ def _document_package(d: dict) -> None:
                 if artifact and not is_demo_mode():
                     st.link_button("Open PSB appraised drawing PDF", q.project_storage_signed_url(artifact["storage_path"]), use_container_width=True)
                 elif artifact:
-                    _pdf_download(d, "appraised drawing PDF", artifact["file_name"], "PSB Appraised Drawing")
+                    _pdf_download(d, "appraised drawing PDF", artifact["file_name"], "PSB Appraised Drawing", key_scope)
                 else:
                     st.warning("Awaiting engineer-uploaded appraised drawing PDF.")
             with c4:
@@ -561,7 +561,7 @@ def _document_package(d: dict) -> None:
                 if artifact and not is_demo_mode():
                     st.link_button("Open Design Appraisal Report PDF", q.project_storage_signed_url(artifact["storage_path"]), use_container_width=True)
                 elif artifact:
-                    _pdf_download(d, "Design Appraisal Report PDF", artifact["file_name"], "Design Appraisal Report")
+                    _pdf_download(d, "Design Appraisal Report PDF", artifact["file_name"], "Design Appraisal Report", key_scope)
                 else:
                     st.warning("Awaiting engineer-uploaded Design Appraisal Report PDF.")
         else:
@@ -738,7 +738,7 @@ def _gm_review_card(d: dict, project: dict) -> None:
         st.markdown(f'**{d["drawing_no"]} — {d["title"]}** · Rev {d["revision"]}')
         st.write(f'Discipline: **{d["discipline"]}**')
         st.success("Manager has completed review and forwarded this drawing to GM.")
-        _document_package(d)
+        _document_package(d, "gm_decision")
         obs = uq.list_plan_observations(d["id"], open_only=True)
         if obs:
             st.warning(f"{len(obs)} open observation(s) remain.")
