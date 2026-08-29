@@ -1015,5 +1015,29 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
     color:#161F2C !important;
   }
 }
+
+/* Plan Appraisal master-detail register: information density inspired by
+   established classification systems, expressed in the PSB design language. */
+.pa-register-title {
+  margin:18px 0 9px; padding:9px 12px;
+  border-left:4px solid #0A7485; border-bottom:1px solid #D8E1E6;
+  background:linear-gradient(90deg,#EDF7F6,#F8FBFC);
+  color:#083D4B; font-size:11px; font-weight:900; letter-spacing:.85px;
+}
+.pa-particular {
+  display:grid; grid-template-columns:minmax(108px,.8fr) minmax(0,1.45fr);
+  gap:10px; min-height:42px; align-items:center; padding:8px 10px;
+  border:1px solid #E0E7EB; background:#FFFFFF;
+}
+.pa-particular span { color:#647681; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.45px; }
+.pa-particular strong { color:#102F3D; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+[data-testid="stDataFrame"] {
+  border:1px solid #CAD6DC !important; border-radius:9px !important;
+  box-shadow:0 5px 18px rgba(7,45,60,.055) !important;
+}
+[data-testid="stDataFrame"] canvas { color-scheme:light !important; }
+@media (max-width:900px) {
+  .pa-particular { grid-template-columns:1fr; gap:3px; min-height:58px; }
+}
 """
 
