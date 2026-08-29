@@ -9,6 +9,7 @@ transitions are mirrored by the upgrade_schema.sql tables for Supabase.
 """
 from __future__ import annotations
 
+import html
 from datetime import date, timedelta
 
 import streamlit as st
@@ -35,6 +36,8 @@ def render(project: dict | None = None, role: str | None = None) -> None:
         "technical review, revision control and GM approval."
     )
 
+    _project_identity_panel(project, role)
+
     with st.container(border=True):
         st.markdown("**Controlled appraisal route**")
         route = st.columns(6)
@@ -57,6 +60,11 @@ def render(project: dict | None = None, role: str | None = None) -> None:
 
     if not drawings:
         st.info("No plans have been received for this project. New Designer submissions will appear here automatically.")
+        return
+
+    drawings = _drawing_register(drawings, project)
+    if not drawings:
+        st.info("No drawings match the current register filters.")
         return
 
     intake_statuses = {uq.PA_SUBMITTED, uq.PA_ASSIGNED_MANAGER}
@@ -95,6 +103,96 @@ def render(project: dict | None = None, role: str | None = None) -> None:
                 _drawing_card(d, project, role)
     with tabs[4]:
         _render_group(approved, project, role, "No plans have received final GM approval yet.")
+
+
+def _project_identity_panel(project: dict, role: str) -> None:
+    """Compact project particulars modelled on a classification plan register."""
+    phases = ", ".join(str(value).replace("_", " ").title() for value in project.get("phases", [])) or "—"
+    role_label = {
+        "gm": "GM Classification", "dm": "Plan Appraisal Manager",
+        "engineer": "Plan Appraisal Engineer", "designer": "Designer / Submitter",
+        "owner": "Owner", "ship_management": "Ship Management", "shipyard": "Shipyard",
+    }.get(role, str(role).replace("_", " ").title())
+    fields = [
+        ("Project number", project.get("project_code") or "—"),
+        ("Vessel / project", project.get("name") or "—"),
+        ("Vessel type", project.get("vessel_type") or "—"),
+        ("Flag", project.get("flag_state") or "—"),
+        ("Current scope", phases),
+        ("Access level", role_label),
+    ]
+    st.markdown('<div class="pa-register-title">PROJECT & VESSEL PARTICULARS</div>', unsafe_allow_html=True)
+    cols = st.columns(3)
+    for index, (label, value) in enumerate(fields):
+        cols[index % 3].markdown(
+            f'<div class="pa-particular"><span>{html.escape(str(label))}</span><strong>{html.escape(str(value))}</strong></div>',
+            unsafe_allow_html=True,
+        )
+
+
+def _drawing_register(drawings: list[dict], project: dict) -> list[dict]:
+    """Searchable master register; detailed workflow remains in the tabs below."""
+    st.markdown('<div class="pa-register-title">CONTROLLED DRAWING REGISTER</div>', unsafe_allow_html=True)
+    search_col, status_col = st.columns([2.2, 1])
+    search = search_col.text_input(
+        "Search drawing register",
+        placeholder="Drawing number, name, discipline or file name…",
+        key=f"pa_register_search_{project['id']}",
+    ).strip().lower()
+    available = sorted({uq.PA_STATUS_LABELS.get(row.get("status"), row.get("status", "—")) for row in drawings})
+    selected_status = status_col.selectbox(
+        "Process status", ["All statuses", *available], key=f"pa_register_status_{project['id']}"
+    )
+
+    filtered = []
+    records = []
+    for drawing in drawings:
+        status = uq.PA_STATUS_LABELS.get(drawing.get("status"), drawing.get("status", "—"))
+        manager = q.get_user(drawing.get("manager_id")) if drawing.get("manager_id") else None
+        engineer = q.get_user(drawing.get("engineer_id")) if drawing.get("engineer_id") else None
+        revisions = uq.list_document_revisions(drawing["document_id"])
+        observations = uq.list_plan_observations(drawing["id"], open_only=True)
+        searchable = " ".join(str(value or "") for value in (
+            drawing.get("drawing_no"), drawing.get("title"), drawing.get("discipline"),
+            drawing.get("current_file_name"), status,
+        )).lower()
+        if search and search not in searchable:
+            continue
+        if selected_status != "All statuses" and status != selected_status:
+            continue
+        filtered.append(drawing)
+        records.append({
+            "Drawing No.": drawing.get("drawing_no") or "—",
+            "Drawing Name": drawing.get("title") or "—",
+            "Discipline / Sub-group": drawing.get("discipline") or "—",
+            "Rev.": drawing.get("revision") or 0,
+            "Revision Date": str(drawing.get("updated_at") or drawing.get("submitted_at") or "—"),
+            "Document Process Status": status,
+            "Acceptance Status": "Accepted" if drawing.get("status") == uq.PA_APPROVED else "In process",
+            "Open Remarks": len(observations),
+            "Revision Files": max(len(revisions), 1),
+            "Plan Appraisal Manager": (manager or {}).get("full_name") or "Unassigned",
+            "Appraisal Engineer": (engineer or {}).get("full_name") or "Unassigned",
+            "Current PDF": drawing.get("current_file_name") or "—",
+        })
+
+    if records:
+        st.dataframe(
+            records,
+            hide_index=True,
+            use_container_width=True,
+            height=min(410, 44 + len(records) * 46),
+            column_config={
+                "Drawing Name": st.column_config.TextColumn(width="large"),
+                "Document Process Status": st.column_config.TextColumn(width="medium"),
+                "Current PDF": st.column_config.TextColumn(width="large"),
+            },
+        )
+        st.caption(
+            f"Showing {len(records)} of {len(drawings)} controlled drawing record(s). "
+            "Open a workflow stage below to review PDFs, revisions, remarks, correspondence or assignments."
+        )
+    return filtered
 
 
 def _render_group(drawings: list[dict], project: dict, role: str, empty_message: str) -> None:
