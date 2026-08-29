@@ -66,6 +66,8 @@ def render(project: dict | None = None, role: str | None = None) -> None:
     if not drawings:
         st.info("No drawings match the current register filters.")
         return
+    _drawing_record_workspace(drawings, project, role)
+    st.markdown('<div class="pa-register-title">WORKFLOW QUEUES & DECISIONS</div>', unsafe_allow_html=True)
 
     intake_statuses = {uq.PA_SUBMITTED, uq.PA_ASSIGNED_MANAGER}
     review_statuses = {uq.PA_ASSIGNED_ENGINEER, uq.PA_UNDER_REVIEW, uq.PA_REVIEW_RESUBMITTED, uq.PA_MANAGER_REVIEW}
@@ -193,6 +195,112 @@ def _drawing_register(drawings: list[dict], project: dict) -> list[dict]:
             "Open a workflow stage below to review PDFs, revisions, remarks, correspondence or assignments."
         )
     return filtered
+
+
+def _drawing_record_workspace(drawings: list[dict], project: dict, role: str) -> None:
+    """Expandable-row equivalent with one controlled record open at a time."""
+    options = [row["id"] for row in drawings]
+    by_id = {row["id"]: row for row in drawings}
+    selected_id = st.selectbox(
+        "Open drawing record",
+        options,
+        format_func=lambda item: (
+            f"{by_id[item].get('drawing_no', 'Plan')} · {by_id[item].get('title', 'Untitled')} · "
+            f"Rev {by_id[item].get('revision', '—')}"
+        ),
+        key=f"pa_open_record_{project['id']}",
+    )
+    drawing = by_id[selected_id]
+    manager = q.get_user(drawing.get("manager_id")) if drawing.get("manager_id") else None
+    engineer = q.get_user(drawing.get("engineer_id")) if drawing.get("engineer_id") else None
+    revisions = uq.list_document_revisions(drawing["document_id"])
+    observations = uq.list_plan_observations(drawing["id"], open_only=False)
+    events = uq.list_plan_events(drawing["id"])
+
+    detail_tabs = st.tabs([
+        "Drawing Details",
+        "Document Approval Process",
+        "Uploaded Documents & Revisions",
+        "Assignments & Access",
+        "Remarks & History",
+    ])
+    with detail_tabs[0]:
+        status = uq.PA_STATUS_LABELS.get(drawing.get("status"), drawing.get("status", "—"))
+        fields = [
+            ("Drawing number", drawing.get("drawing_no")), ("Drawing name", drawing.get("title")),
+            ("Discipline / sub-group", drawing.get("discipline")), ("Current revision", drawing.get("revision")),
+            ("Revision date", drawing.get("updated_at") or drawing.get("submitted_at")),
+            ("Document process status", status), ("Current PDF", drawing.get("current_file_name")),
+            ("Acceptance status", "Accepted" if drawing.get("status") == uq.PA_APPROVED else "In process"),
+        ]
+        cards = "".join(
+            f'<div class="pa-detail-cell"><span>{html.escape(str(label))}</span>'
+            f'<strong>{html.escape(str(value or "—"))}</strong></div>' for label, value in fields
+        )
+        st.markdown(f'<div class="pa-detail-grid">{cards}</div>', unsafe_allow_html=True)
+        st.progress(uq.plan_progress(drawing["status"]))
+
+    with detail_tabs[1]:
+        process_rows = []
+        revision_rows = revisions or [{
+            "revision": drawing.get("revision"), "file_name": drawing.get("current_file_name"),
+            "status": drawing.get("status"), "created_at": drawing.get("submitted_at"),
+        }]
+        for revision in revision_rows:
+            process_rows.append({
+                "Drawing No.": drawing.get("drawing_no") or "—",
+                "Drawing Name": drawing.get("title") or "—",
+                "Revision": revision.get("revision") or "—",
+                "Revision Date": str(revision.get("created_at") or "—"),
+                "File Name": revision.get("file_name") or "—",
+                "Process Status": str(revision.get("status") or "—").replace("_", " ").title(),
+                "Acceptance": "Accepted" if str(revision.get("status")) == "approved" else "Controlled review",
+                "Plan Appraisal Engineer": (engineer or {}).get("full_name") or "Unassigned",
+            })
+        st.dataframe(process_rows, hide_index=True, use_container_width=True, height=min(300, 44 + len(process_rows) * 46))
+        st.caption("Each revision remains a separate immutable approval-process record; superseded files are retained for audit.")
+
+    with detail_tabs[2]:
+        _document_package(drawing)
+        st.markdown("**Controlled revision files**")
+        for revision in revision_rows:
+            current = " · CURRENT" if int(revision.get("revision") or 0) == int(drawing.get("revision") or 0) else ""
+            st.markdown(
+                f"**Rev {revision.get('revision', '—')}** · {revision.get('file_name') or '—'} · "
+                f"{str(revision.get('status') or '—').replace('_', ' ').title()}{current}"
+            )
+            st.caption(str(revision.get("created_at") or ""))
+
+    with detail_tabs[3]:
+        assignment_rows = [
+            ("Submitting party", q.get_user(drawing.get("designer_id")) if drawing.get("designer_id") else None, "Uploader"),
+            ("Plan Appraisal Manager", manager, "Manager / allocator"),
+            ("Plan Appraisal Engineer", engineer, "Technical reviewer"),
+        ]
+        for label, user, access in assignment_rows:
+            left, middle, right = st.columns([1.25, 1.6, 1])
+            left.markdown(f"**{label}**")
+            middle.write((user or {}).get("full_name") or "Unassigned")
+            right.caption(access)
+        st.info("Assignments are project- and drawing-specific. Use the applicable workflow queue below to allocate or change an authorised reviewer.")
+
+    with detail_tabs[4]:
+        if not observations and not events:
+            st.success("No remarks or approval-history events are recorded for this drawing.")
+        for observation in observations:
+            state = str(observation.get("status") or "open").replace("_", " ").title()
+            st.markdown(f"**{observation.get('obs_code', 'Remark')}** · {observation.get('severity', '—')} · {state}")
+            st.caption(observation.get("description") or "No description recorded.")
+            response = observation.get("designer_response") or observation.get("response")
+            if response:
+                st.info(f"Designer response: {response}")
+        for event in events:
+            actor = q.get_user(event.get("actor_id"))
+            st.markdown(
+                f"**{str(event.get('event_type') or 'Event').replace('_', ' ').title()}** · "
+                f"{(actor or {}).get('full_name') or 'System'}"
+            )
+            st.caption(f"{event.get('created_at') or '—'} · {event.get('note') or ''}")
 
 
 def _render_group(drawings: list[dict], project: dict, role: str, empty_message: str) -> None:
