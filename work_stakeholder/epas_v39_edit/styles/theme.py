@@ -1037,7 +1037,7 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
   box-shadow:0 5px 18px rgba(7,45,60,.055) !important;
 }
 [data-testid="stDataFrame"] canvas { color-scheme:light !important; }
-@media (max-width:900px) {
+@media (max-width:1100px) {
   .pa-particular-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .pa-particular { grid-template-columns:1fr; gap:3px; min-height:58px; }
 }
