@@ -1032,6 +1032,10 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 }
 .pa-particular span { color:#647681; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.45px; }
 .pa-particular strong { color:#102F3D; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+.pa-detail-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:10px 0 14px; }
+.pa-detail-cell { min-height:66px; padding:10px 12px; border:1px solid #DDE6EA; border-radius:7px; background:#FFFFFF; }
+.pa-detail-cell span { display:block; color:#6A7A84; font-size:9px; font-weight:850; letter-spacing:.55px; text-transform:uppercase; margin-bottom:5px; }
+.pa-detail-cell strong { display:block; color:#0D3444; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
 [data-testid="stDataFrame"] {
   border:1px solid #CAD6DC !important; border-radius:9px !important;
   box-shadow:0 5px 18px rgba(7,45,60,.055) !important;
@@ -1039,8 +1043,9 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 [data-testid="stDataFrame"] canvas { color-scheme:light !important; }
 @media (max-width:1100px) {
   .pa-particular-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .pa-detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .pa-particular { grid-template-columns:1fr; gap:3px; min-height:58px; }
 }
-@media (max-width:620px) { .pa-particular-grid { grid-template-columns:1fr; } }
+@media (max-width:620px) { .pa-particular-grid,.pa-detail-grid { grid-template-columns:1fr; } }
 """
 
