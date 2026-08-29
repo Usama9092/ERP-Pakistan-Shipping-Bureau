@@ -122,12 +122,12 @@ def _project_identity_panel(project: dict, role: str) -> None:
         ("Access level", role_label),
     ]
     st.markdown('<div class="pa-register-title">PROJECT & VESSEL PARTICULARS</div>', unsafe_allow_html=True)
-    cols = st.columns(3)
-    for index, (label, value) in enumerate(fields):
-        cols[index % 3].markdown(
-            f'<div class="pa-particular"><span>{html.escape(str(label))}</span><strong>{html.escape(str(value))}</strong></div>',
-            unsafe_allow_html=True,
-        )
+    items = "".join(
+        f'<div class="pa-particular"><span>{html.escape(str(label))}</span>'
+        f'<strong>{html.escape(str(value))}</strong></div>'
+        for label, value in fields
+    )
+    st.markdown(f'<div class="pa-particular-grid">{items}</div>', unsafe_allow_html=True)
 
 
 def _drawing_register(drawings: list[dict], project: dict) -> list[dict]:
