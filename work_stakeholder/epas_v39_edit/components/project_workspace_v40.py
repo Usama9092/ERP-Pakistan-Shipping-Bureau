@@ -702,7 +702,10 @@ def _survey(role, pid, followup_only=False, phase_filter: str | None = None):
             st.info("Follow-up RFI view — controlled corrective-action loop.")
         if phase_filter:
             st.markdown(f"**Current survey phase:** {phase_label}")
-        rfi_queue.render(project_id=pid)
+        # The queue contract requires an explicit lifecycle phase.  Passing the
+        # selected project tab's phase prevents the deployed NSC/In-Service
+        # workspace from failing with a missing ``phase`` argument.
+        rfi_queue.render(phase=phase_filter or cfg.PHASE_NSC_SURVEY, project_id=pid)
     except Exception as exc:
         st.error(f"Survey workspace unavailable: {exc}")
 
