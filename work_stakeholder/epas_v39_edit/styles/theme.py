@@ -956,6 +956,15 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
   -webkit-text-fill-color:currentColor !important;
   opacity:1 !important;
 }
+.st-key-psb_fixed_nav [data-testid="stRadio"],
+.st-key-psb_fixed_nav [data-testid="stRadio"] > div,
+.st-key-psb_fixed_nav [role="radiogroup"] {
+  width:100% !important;
+  max-width:none !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
 
 @media (max-width:1100px) {
   [data-testid="stMainBlockContainer"] { padding:18px 18px 40px !important; }
@@ -972,6 +981,15 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
     height:100vh !important; padding:26px 18px 104px !important;
   }
   .st-key-psb_fixed_nav .st-key-psb_nav_signout { position:absolute !important; left:18px !important; right:18px !important; bottom:20px !important; }
+  /* Six-up KPI bands become two readable rows in the compact workspace. */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(6)) {
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(6)) > [data-testid="stColumn"] {
+    width:auto !important; min-width:0 !important; flex:none !important;
+  }
 }
 
 @media (max-width:720px) {
