@@ -1,9 +1,9 @@
-"""Versioned Plan Appraisal entrypoint for the production project workspace.
+"""Production Plan Appraisal entrypoint.
 
-v4.2 uses the production-only professional Plan Appraisal surface. It keeps the
-real Supabase workflow while presenting the controlled drawing register and
-revision dossier with a classification-society-grade interface.
+Exact controlled route:
+Designer -> GM -> Plan Appraisal Manager -> Plan Appraisal Engineer ->
+Plan Appraisal Manager -> GM -> Approved package delivered to Designer.
 """
-from components.plan_appraisal_pro import render
+from components.plan_appraisal_routed import render
 
 __all__ = ["render"]
